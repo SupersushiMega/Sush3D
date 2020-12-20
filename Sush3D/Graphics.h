@@ -3,7 +3,11 @@
 #include <Windows.h>
 #include <d2d1.h>
 #include <d2d1_1.h>
+#include <vector>
+#include <fstream>
+#include <strstream>
 
+using namespace std;
 
 class Graphics
 {
@@ -12,11 +16,56 @@ class Graphics
 	ID2D1SolidColorBrush* Solidbrush;
 
 public:
+
+	uint16_t Resolution[2] = { 0 };
+	float fov = 90.0f;
+	float ViewingDist = 1000.0f;
+	float DistfromScreen = 0.5f;
+	float aspect = 0.0f;
+	float XYcoef = 0.0f; 
+
 	Graphics();
 	~Graphics();
 
-	bool Init(HWND windowHandle);
+	struct matrix4x4
+	{
+		float mat[4][4] = { 0 };
+	};
 
+	Graphics::matrix4x4 ProjMatrix;
+
+	struct vec3D
+	{
+		float x = 0;
+		float y = 0;
+		float z = 0;
+	};
+
+	struct triangle
+	{
+		vec3D vectors[3];
+	};
+
+	struct mesh
+	{
+		vector<triangle> tri;
+	};
+
+	struct Color
+	{
+		float r = 1.0f;
+		float g = 1.0f;
+		float b = 1.0f;
+		float a = 1.0f;
+	};
+
+	//Calculation functions
+	//==========================================================================================================================
+	void MatrixVectorMultiplication(vec3D &inputVec, vec3D &outputVec, matrix4x4 &matrix);
+	//==========================================================================================================================
+	
+	//Draw functions
+	//==========================================================================================================================
 	void BeginDraw()
 	{
 		rendertarget->BeginDraw();
@@ -28,5 +77,13 @@ public:
 	}
 
 	void ClearScreen(float r, float g, float b);
-	void DrawTriangle(float *x1, float *y1, float *x2, float *y2, float *x3, float *y3, float *r, float *g, float *b, float *a);
+	void DrawTriangle(float &x1, float &y1, float &x2, float &y2, float &x3, float &y3, float &r, float &g, float &b, float &a);
+	void DrawTriangle2(triangle Triangle, Color color);
+	void DrawMesh(mesh mesh, Color color);
+	//==========================================================================================================================
+
+	//Other functions
+	//==========================================================================================================================
+	bool Init(HWND windowHandle, float FOV, float DistancefromScreen, float ViewingDistance);
+	//==========================================================================================================================
 };

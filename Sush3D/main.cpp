@@ -5,6 +5,7 @@ Made by SupersushiMega
 
 #include <Windows.h>
 #include "Graphics.h"
+#include <algorithm>
 
 Graphics* graphics;
 
@@ -22,6 +23,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int nCmdShow)
 {
+
+	RECT resolution = {0, 0, 800, 600};
+
 	//Window Setup
 	//=========================================================================================
 	WNDCLASSEX windowclass;
@@ -36,7 +40,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 
 	RegisterClassEx(&windowclass);
 
-	RECT rect = {0, 0, 800, 600}; //Drawing area
+	RECT rect = resolution; //Drawing area
 	AdjustWindowRectEx(&rect, WS_OVERLAPPEDWINDOW, false, WS_EX_OVERLAPPEDWINDOW);	//Calculate window Size
 
 	HWND windowhandle = CreateWindowEx(WS_EX_OVERLAPPEDWINDOW, L"MainWindow", L"Sush3D", WS_OVERLAPPEDWINDOW, 100, 100, rect.right - rect.left, rect.bottom - rect.top, NULL, NULL, hInstance, 0);
@@ -49,7 +53,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 
 	graphics = new Graphics();
 
-	if (!graphics->Init(windowhandle))
+	if (!graphics->Init(windowhandle, 90.0f, 0.1f, 1000.0f))
 	{
 		delete graphics;
 		return -1;
@@ -64,17 +68,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 	MSG message;
 	message.message = WM_NULL;
 
-	float x1 = 0.0f;
-	float y1 = 0.0f;
-
-	float x2 = 0.0f;
-	float y2 = 0.0f;
-
-	float x3 = 0.0f;
-	float y3 = 0.0f;
-
-	float r = 1.0f;
-
 	while (message.message != WM_QUIT)
 	{
 		if (PeekMessage(&message, windowhandle, 0, 0, PM_REMOVE))
@@ -85,28 +78,43 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 		{
 			//update
 
-			y = 1.0f;
-
 			//render
 			graphics->BeginDraw();
 
-			//graphics->ClearScreen(0.0f, 0.0f, 0.5f);
+			Graphics::Color color;
+			Graphics::mesh CubeMesh;
 
-			r = 0.0f;
+			graphics->ClearScreen(1.0f, 0.0f, 0.0f);
 
-			graphics->DrawTriangle(&x1, &y1, &x2, &y2, &x3, &y3, &r, &r, &r, &y);
+			CubeMesh.tri = {
 
-			r = 1.0f;
+				// SOUTH
+				{ 0.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 0.0f },
+				{ 0.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 0.0f, 0.0f },
 
-			x3 = x2;
-			x2 = x1;
-			x1 = rand() % 800;
+				// EAST                                                      
+				{ 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f },
+				{ 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 1.0f },
 
-			y3 = y2;
-			y2 = y1;
-			y1 = rand() % 600;
+				// NORTH                                                     
+				{ 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f },
+				{ 1.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 1.0f },
 
-			graphics->DrawTriangle(&x1, &y1, &x2, &y2, &x3, &y3, &r, &r, &r, &r);
+				// WEST                                                      
+				{ 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 0.0f },
+				{ 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 0.0f,    0.0f, 0.0f, 0.0f },
+
+				// TOP                                                       
+				{ 0.0f, 1.0f, 0.0f,    0.0f, 1.0f, 1.0f,    1.0f, 1.0f, 1.0f },
+				{ 0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 1.0f, 0.0f },
+
+				// BOTTOM                                                    
+				{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f },
+				{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 0.0f },
+
+			};
+
+			graphics->DrawMesh(CubeMesh, color);
 
 			graphics->EndDraw();
 		}
