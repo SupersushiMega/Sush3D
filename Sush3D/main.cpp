@@ -24,7 +24,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int nCmdShow)
 {
 
-	RECT resolution = {0, 0, 800, 600};
+	RECT resolution = { 0, 0, 800, 600 };
 
 	//Window Setup
 	//=========================================================================================

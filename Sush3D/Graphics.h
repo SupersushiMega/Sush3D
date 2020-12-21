@@ -22,7 +22,7 @@ public:
 	float ViewingDist = 1000.0f;
 	float DistfromScreen = 0.5f;
 	float aspect = 0.0f;
-	float XYcoef = 0.0f; 
+	float XYcoef = 0.0f;
 
 	Graphics();
 	~Graphics();
@@ -32,7 +32,10 @@ public:
 		float mat[4][4] = { 0 };
 	};
 
-	Graphics::matrix4x4 ProjMatrix;
+	matrix4x4 ProjMatrix;
+
+	matrix4x4 RotZMatrix;
+	matrix4x4 RotXMatrix;
 
 	struct vec3D
 	{
@@ -61,9 +64,9 @@ public:
 
 	//Calculation functions
 	//==========================================================================================================================
-	void MatrixVectorMultiplication(vec3D &inputVec, vec3D &outputVec, matrix4x4 &matrix);
+	void MatrixVectorMultiplication(vec3D& inputVec, vec3D& outputVec, matrix4x4& matrix);
 	//==========================================================================================================================
-	
+
 	//Draw functions
 	//==========================================================================================================================
 	void BeginDraw()
@@ -77,7 +80,7 @@ public:
 	}
 
 	void ClearScreen(float r, float g, float b);
-	void DrawTriangle(float &x1, float &y1, float &x2, float &y2, float &x3, float &y3, float &r, float &g, float &b, float &a);
+	void DrawTriangle(float& x1, float& y1, float& x2, float& y2, float& x3, float& y3, float& r, float& g, float& b, float& a);
 	void DrawTriangle2(triangle Triangle, Color color);
 	void DrawMesh(mesh mesh, Color color);
 	//==========================================================================================================================
