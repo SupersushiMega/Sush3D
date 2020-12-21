@@ -83,6 +83,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 
 			Graphics::Color color;
 			Graphics::mesh CubeMesh;
+			Graphics::mesh TestMesh;
 
 			graphics->ClearScreen(1.0f, 0.0f, 0.0f);
 
@@ -114,7 +115,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 
 			};
 
-			graphics->DrawMesh(CubeMesh, color);
+			TestMesh.LoadFromObj("Test.obj");
+
+			graphics->DrawMesh(TestMesh, color);
 
 			graphics->EndDraw();
 		}

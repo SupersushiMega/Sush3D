@@ -37,6 +37,14 @@ public:
 	matrix4x4 RotZMatrix;
 	matrix4x4 RotXMatrix;
 
+	struct Color
+	{
+		float r = 1.0f;
+		float g = 1.0f;
+		float b = 1.0f;
+		float a = 1.0f;
+	};
+
 	struct vec3D
 	{
 		float x = 0;
@@ -47,21 +55,24 @@ public:
 	struct triangle
 	{
 		vec3D vectors[3];
+		Color color = {1};
 	};
 
 	struct mesh
 	{
 		vector<triangle> tri;
+		
+		bool LoadFromObj(string filename);
 	};
 
-	struct Color
+	struct GlobalLight
 	{
-		float r = 1.0f;
-		float g = 1.0f;
-		float b = 1.0f;
-		float a = 1.0f;
+		vec3D Direction = { 0.0f, 0.0f, -1.0f };
+		Color color = { 1.0f, 1.0f, 1.0f };
+		float strength = 1.0f;
 	};
 
+	GlobalLight globalLight;
 	vec3D camera;
 
 private:

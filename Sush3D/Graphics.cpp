@@ -1,7 +1,12 @@
 #include "Graphics.h"
 #include <iostream>
 #include <string>
+#include <fstream>
+#include <strstream>
+#include <algorithm>
+
 float theta = 0;
+
 
 Graphics::Graphics()
 {
@@ -9,6 +14,7 @@ Graphics::Graphics()
 	rendertarget = NULL;
 	Solidbrush = NULL;
 }
+
 
 Graphics::~Graphics()
 {
@@ -27,6 +33,7 @@ Graphics::~Graphics()
 		Solidbrush->Release();
 	}
 }
+
 
 bool Graphics::Init(HWND windowHandle, float FOV, float DistancefromScreen, float ViewingDistance)
 {
@@ -82,6 +89,44 @@ bool Graphics::Init(HWND windowHandle, float FOV, float DistancefromScreen, floa
 	return true;
 }
 
+bool Graphics::mesh::LoadFromObj(string filename)
+{
+	ifstream f(filename);
+	if (!f.is_open())
+	{
+		return false;
+	}
+
+	vector<vec3D> verts; //vertice pool
+
+	while (!f.eof())
+	{
+		char line[128];
+		f.getline(line, 128);
+
+		strstream stream;
+		stream << line;
+
+		char Waste;
+
+		if (line[0] == 'v')
+		{
+			vec3D TempVert;
+			stream >> Waste >> TempVert.x >> TempVert.y >> TempVert.z;
+			verts.push_back(TempVert);
+		}
+
+		else if (line[0] == 'f')
+		{
+			uint64_t face[3];
+			stream >> Waste >> face[0] >> face[1] >> face[2];
+			tri.push_back({ verts[face[0] - 1], verts[face[1] - 1] , verts[face[2] - 1] });
+		}
+	}
+
+	return true;
+};
+
 void Graphics::MatrixVectorMultiplication(vec3D& inputVec, vec3D& outputVec, matrix4x4& matrix)
 {
 	outputVec.x = inputVec.x * matrix.mat[0][0] + inputVec.y * matrix.mat[1][0] + inputVec.z * matrix.mat[2][0] + matrix.mat[3][0];
@@ -97,18 +142,27 @@ void Graphics::MatrixVectorMultiplication(vec3D& inputVec, vec3D& outputVec, mat
 	}
 }
 
+
 void Graphics::ClearScreen(float r, float g, float b)
 {
 	rendertarget->Clear(D2D1::ColorF(r, g, b));
 };
 
+
 void Graphics::DrawFlatTop(vec3D& point0, vec3D& point1, vec3D& point2)
 {
+	//Calculate Slopes
+	//==========================================================================================================================
 	const float slope0 = (point2.x - point0.x) / (point2.y - point0.y);
 	const float slope1 = (point2.x - point1.x) / (point2.y - point1.y);
+	//==========================================================================================================================
 
+	//Calculate Start and End Y
+	//==========================================================================================================================
 	const int32_t StartY = (int16_t)ceil(point0.y - 0.5f);
 	const int32_t EndY = (int16_t)ceil(point2.y - 0.5f);
+	//==========================================================================================================================
+
 
 	for (int32_t y = StartY; y < EndY; y++)
 	{
@@ -121,10 +175,13 @@ void Graphics::DrawFlatTop(vec3D& point0, vec3D& point1, vec3D& point2)
 		const float pointx0 = slope0 * (float(y) + 0.5f - point0.y) + point0.x;
 		const float pointx1 = slope1 * (float(y) + 0.5f - point1.y) + point1.x;
 
+		//Calculate Start and End X
+		//==========================================================================================================================
 		Start.x = (int32_t)ceil(pointx0 - 0.05f);
 		End.x = (int32_t)ceil(pointx1 - 0.05f);
+		//==========================================================================================================================
 
-		rendertarget->DrawLine(D2D1::Point2F(Start.x, Start.y), D2D1::Point2F(End.x, End.y), Solidbrush);
+		rendertarget->DrawLine(D2D1::Point2F(Start.x, Start.y), D2D1::Point2F(End.x, End.y), Solidbrush, 2.0f);	//Draw Lines
 	}
 };
 
@@ -150,9 +207,10 @@ void Graphics::DrawFlatBottom(vec3D& point0, vec3D& point1, vec3D& point2)
 		Start.x = (int32_t)ceil(pointx0 - 0.05f);
 		End.x = (int32_t)ceil(pointx1 - 0.05f);
 
-		rendertarget->DrawLine(D2D1::Point2F(Start.x, Start.y), D2D1::Point2F(End.x, End.y), Solidbrush);
+		rendertarget->DrawLine(D2D1::Point2F(Start.x, Start.y), D2D1::Point2F(End.x, End.y), Solidbrush, 2.0f);
 	}
 };
+
 
 void Graphics::DrawTriangle(float& x1, float& y1, float& x2, float& y2, float& x3, float& y3, float& r, float& g, float& b, float& a)
 {
@@ -162,6 +220,7 @@ void Graphics::DrawTriangle(float& x1, float& y1, float& x2, float& y2, float& x
 	rendertarget->DrawLine(D2D1::Point2F(x3, y3), D2D1::Point2F(x1, y1), Solidbrush);
 };
 
+
 void Graphics::DrawTriangle2(triangle Triangle, Color color)
 {
 	Solidbrush->SetColor(D2D1::ColorF(color.r, color.g, color.b, color.a));
@@ -170,6 +229,7 @@ void Graphics::DrawTriangle2(triangle Triangle, Color color)
 		rendertarget->DrawLine(D2D1::Point2F(Triangle.vectors[i].x, Triangle.vectors[i].y), D2D1::Point2F(Triangle.vectors[(i + 1) % 3].x, Triangle.vectors[(i + 1) % 3].y), Solidbrush);
 	}
 };
+
 
 void Graphics::DrawTriangle2filled(triangle &Triangle, Color &color)
 {
@@ -241,6 +301,7 @@ void Graphics::DrawTriangle2filled(triangle &Triangle, Color &color)
 
 };
 
+
 void Graphics::DrawMesh(mesh mesh, Color color)
 {
 	theta += 0.01f;
@@ -263,17 +324,23 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 	Graphics::RotXMatrix.mat[2][2] = cosf(theta * 0.5f);
 	Graphics::RotXMatrix.mat[3][3] = 1;
 	//==========================================================================================================================
+	
 
+	triangle ZrotadetTri;
+	triangle ZXrotadetTri;
+	triangle TranslatedTri;
+	triangle ProjectedTri;
+
+	vec3D normal;
+	vec3D line1;
+	vec3D line2;
+
+	vector<triangle> TriangleToRasterVector;
+
+	//Draw Triangles
+	//==========================================================================================================================
 	for (auto tri : mesh.tri)
 	{
-		triangle ZrotadetTri;
-		triangle ZXrotadetTri;
-		triangle TranslatedTri;
-		triangle ProjectedTri;
-
-		vec3D normal;
-		vec3D line1;
-		vec3D line2;
 
 		float NormalLength = 0;
 
@@ -288,9 +355,9 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 		//z translation
 		//==========================================================================================================================
 		TranslatedTri = ZXrotadetTri;
-		TranslatedTri.vectors[0].z = ZXrotadetTri.vectors[0].z + 3.0f;
-		TranslatedTri.vectors[1].z = ZXrotadetTri.vectors[1].z + 3.0f;
-		TranslatedTri.vectors[2].z = ZXrotadetTri.vectors[2].z + 3.0f;
+		TranslatedTri.vectors[0].z = ZXrotadetTri.vectors[0].z + 8.0f;
+		TranslatedTri.vectors[1].z = ZXrotadetTri.vectors[1].z + 8.0f;
+		TranslatedTri.vectors[2].z = ZXrotadetTri.vectors[2].z + 8.0f;
 		//==========================================================================================================================
 
 		//Normal Calculation
@@ -313,7 +380,6 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 		normal.y /= NormalLength;
 		normal.z /= NormalLength;
 		//==========================================================================================================================
-
 
 
 		if (normal.x * (TranslatedTri.vectors[0].x - Graphics::camera.x) + normal.y * (TranslatedTri.vectors[0].y - Graphics::camera.y) + normal.z * (TranslatedTri.vectors[0].z - Graphics::camera.z) < 0.0f)
@@ -347,8 +413,35 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 			ProjectedTri.vectors[2].y *= 0.5f * (float)Graphics::Resolution[1];
 			//==========================================================================================================================
 
-			DrawTriangle2filled(ProjectedTri, color);
-			DrawTriangle2(ProjectedTri, color);
+			//lighting
+			//==========================================================================================================================
+			//Normalize light
+			float NormalizedLight = sqrt(Graphics::globalLight.Direction.x * Graphics::globalLight.Direction.x + Graphics::globalLight.Direction.y * Graphics::globalLight.Direction.y + Graphics::globalLight.Direction.z * Graphics::globalLight.Direction.z);
+			Graphics::globalLight.Direction.x /= NormalizedLight;
+			Graphics::globalLight.Direction.y /= NormalizedLight;
+			Graphics::globalLight.Direction.z /= NormalizedLight;
+
+			float DotProduct = normal.x * Graphics::globalLight.Direction.x + normal.y * Graphics::globalLight.Direction.y + normal.z * Graphics::globalLight.Direction.z;
+
+			ProjectedTri.color = { 1.0f * DotProduct, 1.0f * DotProduct, 1.0f * DotProduct, 1.0f };
+			//==========================================================================================================================
+
+			TriangleToRasterVector.push_back(ProjectedTri);
+
+			//DrawTriangle2filled(ProjectedTri, color);
 		}
 	}
+
+	sort(TriangleToRasterVector.begin(), TriangleToRasterVector.end(), [](triangle& tri1, triangle& tri2)
+		{
+			float z1 = (tri1.vectors[0].z, tri1.vectors[1].z, tri1.vectors[2].z) / 3.0f;
+			float z2 = (tri2.vectors[0].z, tri2.vectors[1].z, tri2.vectors[2].z) / 3.0f;
+			return z1 > z2;
+		});
+
+	for (auto& ProjectedTri : TriangleToRasterVector)
+	{
+		DrawTriangle2filled(ProjectedTri, ProjectedTri.color);
+	}
+	//==========================================================================================================================
 };
