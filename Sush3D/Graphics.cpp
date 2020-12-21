@@ -1,5 +1,6 @@
 #include "Graphics.h"
-
+#include <iostream>
+#include <string>
 float theta = 0;
 
 Graphics::Graphics()
@@ -101,6 +102,58 @@ void Graphics::ClearScreen(float r, float g, float b)
 	rendertarget->Clear(D2D1::ColorF(r, g, b));
 };
 
+void Graphics::DrawFlatTop(vec3D& point0, vec3D& point1, vec3D& point2)
+{
+	const float slope0 = (point2.x - point0.x) / (point2.y - point0.y);
+	const float slope1 = (point2.x - point1.x) / (point2.y - point1.y);
+
+	const int32_t StartY = (int16_t)ceil(point0.y - 0.5f);
+	const int32_t EndY = (int16_t)ceil(point2.y - 0.5f);
+
+	for (int32_t y = StartY; y < EndY; y++)
+	{
+		vec3D Start;
+		vec3D End;
+
+		Start.y = y;
+		End.y = y;
+
+		const float pointx0 = slope0 * (float(y) + 0.5f - point0.y) + point0.x;
+		const float pointx1 = slope1 * (float(y) + 0.5f - point1.y) + point1.x;
+
+		Start.x = (int32_t)ceil(pointx0 - 0.05f);
+		End.x = (int32_t)ceil(pointx1 - 0.05f);
+
+		rendertarget->DrawLine(D2D1::Point2F(Start.x, Start.y), D2D1::Point2F(End.x, End.y), Solidbrush);
+	}
+};
+
+void Graphics::DrawFlatBottom(vec3D& point0, vec3D& point1, vec3D& point2)
+{
+	const float slope0 = (point1.x - point0.x) / (point1.y - point0.y);
+	const float slope1 = (point2.x - point0.x) / (point2.y - point0.y);
+
+	const int32_t StartY = (int16_t)ceil(point0.y - 0.5f);
+	const int32_t EndY = (int16_t)ceil(point2.y - 0.5f);
+
+	for (int32_t y = StartY; y < EndY; y++)
+	{
+		vec3D Start;
+		vec3D End;
+
+		Start.y = y;
+		End.y = y;
+
+		const float pointx0 = slope0 * (float(y) + 0.5f - point0.y) + point0.x;
+		const float pointx1 = slope1 * (float(y) + 0.5f - point0.y) + point0.x;
+
+		Start.x = (int32_t)ceil(pointx0 - 0.05f);
+		End.x = (int32_t)ceil(pointx1 - 0.05f);
+
+		rendertarget->DrawLine(D2D1::Point2F(Start.x, Start.y), D2D1::Point2F(End.x, End.y), Solidbrush);
+	}
+};
+
 void Graphics::DrawTriangle(float& x1, float& y1, float& x2, float& y2, float& x3, float& y3, float& r, float& g, float& b, float& a)
 {
 	Solidbrush->SetColor(D2D1::ColorF(r, g, b, a));
@@ -116,6 +169,76 @@ void Graphics::DrawTriangle2(triangle Triangle, Color color)
 	{
 		rendertarget->DrawLine(D2D1::Point2F(Triangle.vectors[i].x, Triangle.vectors[i].y), D2D1::Point2F(Triangle.vectors[(i + 1) % 3].x, Triangle.vectors[(i + 1) % 3].y), Solidbrush);
 	}
+};
+
+void Graphics::DrawTriangle2filled(triangle &Triangle, Color &color)
+{
+	Solidbrush->SetColor(D2D1::ColorF(color.r, color.g, color.b, color.a));
+
+	vec3D* vec0 = &Triangle.vectors[0];
+	vec3D* vec1 = &Triangle.vectors[1];
+	vec3D* vec2 = &Triangle.vectors[2];
+
+	//vector Sort by y value
+	//==========================================================================================================================
+	if (vec1->y < vec0->y)
+	{
+		std::swap(vec0, vec1);
+	}
+	if (vec2->y < vec1->y)
+	{
+		std::swap(vec1, vec2);
+	}
+	if (vec1->y < vec0->y)
+	{
+		std::swap(vec0, vec1);
+	}
+	//==========================================================================================================================
+
+	//Check for natural flattop or bottom or neither
+	//==========================================================================================================================
+	if (vec0->y == vec1->y)	//flattop
+	{
+		if (vec1->x < vec0->x)	//vector sort by x value
+		{
+			std::swap(vec0, vec1);
+		}
+		DrawFlatTop(*vec0, *vec1, *vec2);
+	}
+
+	else if (vec1->y == vec2->y)	//flatbottom
+	{
+		if (vec2->x < vec1->x)	//vector sort by x value
+		{
+			std::swap(vec1, vec2);
+		}
+		DrawFlatBottom(*vec0, *vec1, *vec2);
+	}
+
+	else //neither
+	{
+		float alpha = ((vec1->y - vec0->y) / (vec2->y - vec0->y)); //spliting point
+
+		//Splitting vector
+		vec3D vecSplt;
+		vecSplt.x = vec0->x + (vec2->x - vec0->x) * alpha;
+		vecSplt.y = vec0->y + (vec2->y - vec0->y) * alpha;
+
+		if (vec1->x < vecSplt.x)	//check if triangle is major right
+		{
+			DrawFlatBottom(*vec0, *vec1, vecSplt);
+			DrawFlatTop(*vec1, vecSplt, *vec2);
+		}
+
+		else	//triangle is major left
+		{
+			DrawFlatBottom(*vec0, vecSplt, *vec1);
+			DrawFlatTop(vecSplt, *vec1, *vec2);
+		}
+
+	}
+	//==========================================================================================================================
+
 };
 
 void Graphics::DrawMesh(mesh mesh, Color color)
@@ -148,6 +271,12 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 		triangle TranslatedTri;
 		triangle ProjectedTri;
 
+		vec3D normal;
+		vec3D line1;
+		vec3D line2;
+
+		float NormalLength = 0;
+
 		MatrixVectorMultiplication(tri.vectors[0], ZrotadetTri.vectors[0], Graphics::RotZMatrix);
 		MatrixVectorMultiplication(tri.vectors[1], ZrotadetTri.vectors[1], Graphics::RotZMatrix);
 		MatrixVectorMultiplication(tri.vectors[2], ZrotadetTri.vectors[2], Graphics::RotZMatrix);
@@ -164,36 +293,62 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 		TranslatedTri.vectors[2].z = ZXrotadetTri.vectors[2].z + 3.0f;
 		//==========================================================================================================================
 
-		//Projection Matrix Multiplication
+		//Normal Calculation
 		//==========================================================================================================================
-		MatrixVectorMultiplication(TranslatedTri.vectors[0], ProjectedTri.vectors[0], Graphics::ProjMatrix);
-		MatrixVectorMultiplication(TranslatedTri.vectors[1], ProjectedTri.vectors[1], Graphics::ProjMatrix);
-		MatrixVectorMultiplication(TranslatedTri.vectors[2], ProjectedTri.vectors[2], Graphics::ProjMatrix);
-		//==========================================================================================================================
+		line1.x = TranslatedTri.vectors[1].x - TranslatedTri.vectors[0].x;
+		line1.y = TranslatedTri.vectors[1].y - TranslatedTri.vectors[0].y;
+		line1.z = TranslatedTri.vectors[1].z - TranslatedTri.vectors[0].z;
 
-		//Scaling
-		//==========================================================================================================================
-		ProjectedTri.vectors[0].x += 1.0f;
-		ProjectedTri.vectors[0].y += 1.0f;
+		line2.x = TranslatedTri.vectors[2].x - TranslatedTri.vectors[0].x;
+		line2.y = TranslatedTri.vectors[2].y - TranslatedTri.vectors[0].y;
+		line2.z = TranslatedTri.vectors[2].z - TranslatedTri.vectors[0].z;
 
-		ProjectedTri.vectors[1].x += 1.0f;
-		ProjectedTri.vectors[1].y += 1.0f;
+		normal.x = line1.y * line2.z - line1.z * line2.y;
+		normal.y = line1.z * line2.x - line1.x * line2.z;
+		normal.z = line1.x * line2.y - line1.y * line2.x;
 
-		ProjectedTri.vectors[2].x += 1.0f;
-		ProjectedTri.vectors[2].y += 1.0f;
+		NormalLength = sqrtf(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
 
-
-		ProjectedTri.vectors[0].x *= 0.5f * (float)Graphics::Resolution[0];
-		ProjectedTri.vectors[0].y *= 0.5f * (float)Graphics::Resolution[1];
-
-		ProjectedTri.vectors[1].x *= 0.5f * (float)Graphics::Resolution[0];
-		ProjectedTri.vectors[1].y *= 0.5f * (float)Graphics::Resolution[1];
-
-		ProjectedTri.vectors[2].x *= 0.5f * (float)Graphics::Resolution[0];
-		ProjectedTri.vectors[2].y *= 0.5f * (float)Graphics::Resolution[1];
+		normal.x /= NormalLength;
+		normal.y /= NormalLength;
+		normal.z /= NormalLength;
 		//==========================================================================================================================
 
-		DrawTriangle2(ProjectedTri, color);
 
+
+		if (normal.x * (TranslatedTri.vectors[0].x - Graphics::camera.x) + normal.y * (TranslatedTri.vectors[0].y - Graphics::camera.y) + normal.z * (TranslatedTri.vectors[0].z - Graphics::camera.z) < 0.0f)
+		{
+			//Projection Matrix Multiplication
+			//==========================================================================================================================
+			MatrixVectorMultiplication(TranslatedTri.vectors[0], ProjectedTri.vectors[0], Graphics::ProjMatrix);
+			MatrixVectorMultiplication(TranslatedTri.vectors[1], ProjectedTri.vectors[1], Graphics::ProjMatrix);
+			MatrixVectorMultiplication(TranslatedTri.vectors[2], ProjectedTri.vectors[2], Graphics::ProjMatrix);
+			//==========================================================================================================================
+
+			//Scaling
+			//==========================================================================================================================
+			ProjectedTri.vectors[0].x += 1.0f;
+			ProjectedTri.vectors[0].y += 1.0f;
+
+			ProjectedTri.vectors[1].x += 1.0f;
+			ProjectedTri.vectors[1].y += 1.0f;
+
+			ProjectedTri.vectors[2].x += 1.0f;
+			ProjectedTri.vectors[2].y += 1.0f;
+
+
+			ProjectedTri.vectors[0].x *= 0.5f * (float)Graphics::Resolution[0];
+			ProjectedTri.vectors[0].y *= 0.5f * (float)Graphics::Resolution[1];
+
+			ProjectedTri.vectors[1].x *= 0.5f * (float)Graphics::Resolution[0];
+			ProjectedTri.vectors[1].y *= 0.5f * (float)Graphics::Resolution[1];
+
+			ProjectedTri.vectors[2].x *= 0.5f * (float)Graphics::Resolution[0];
+			ProjectedTri.vectors[2].y *= 0.5f * (float)Graphics::Resolution[1];
+			//==========================================================================================================================
+
+			DrawTriangle2filled(ProjectedTri, color);
+			DrawTriangle2(ProjectedTri, color);
+		}
 	}
 };

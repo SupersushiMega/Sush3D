@@ -62,6 +62,9 @@ public:
 		float a = 1.0f;
 	};
 
+	vec3D camera;
+
+private:
 	//Calculation functions
 	//==========================================================================================================================
 	void MatrixVectorMultiplication(vec3D& inputVec, vec3D& outputVec, matrix4x4& matrix);
@@ -69,6 +72,11 @@ public:
 
 	//Draw functions
 	//==========================================================================================================================
+private:
+	void DrawFlatTop(vec3D& point0, vec3D& point1, vec3D& point2);	//draw triangle with flattop
+	void DrawFlatBottom(vec3D& point0, vec3D& point1, vec3D& point2);	//draw triangle with flatbottom
+
+public:
 	void BeginDraw()
 	{
 		rendertarget->BeginDraw();
@@ -82,6 +90,7 @@ public:
 	void ClearScreen(float r, float g, float b);
 	void DrawTriangle(float& x1, float& y1, float& x2, float& y2, float& x3, float& y3, float& r, float& g, float& b, float& a);
 	void DrawTriangle2(triangle Triangle, Color color);
+	void DrawTriangle2filled(triangle &Triangle, Color &color);
 	void DrawMesh(mesh mesh, Color color);
 	//==========================================================================================================================
 
