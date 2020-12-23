@@ -5,6 +5,11 @@
 #include <strstream>
 #include <algorithm>
 
+/*Sush3D
+
+Made by SupersushiMega with help of javidx9 code-It-Yourself 3D Graphics Engine youtube series
+*/
+
 float theta = 0;
 
 Graphics::Graphics()
@@ -138,6 +143,31 @@ Graphics::matrix4x4 Graphics::MatrixMatrixMultiplication(matrix4x4& matrix1, mat
 	return matrix;
 }
 
+Graphics::matrix4x4 Graphics::MatrixInvertQuick(matrix4x4& matrixIn)	//Only Rotation and Translation Matrices
+{
+	matrix4x4 matrix;
+	matrix.mat[0][0] = matrixIn.mat[0][0];
+	matrix.mat[0][1] = matrixIn.mat[1][0];
+	matrix.mat[0][2] = matrixIn.mat[2][0];
+	matrix.mat[0][3] = 0.0f;
+
+	matrix.mat[1][0] = matrixIn.mat[0][1];
+	matrix.mat[1][1] = matrixIn.mat[1][1];
+	matrix.mat[1][2] = matrixIn.mat[2][1];
+	matrix.mat[1][3] = 0.0f;
+
+	matrix.mat[2][0] = matrixIn.mat[0][2];
+	matrix.mat[2][1] = matrixIn.mat[1][2];
+	matrix.mat[2][2] = matrixIn.mat[2][2];
+	matrix.mat[2][3] = 0.0f;
+
+	matrix.mat[3][0] = -(matrixIn.mat[3][0] * matrix.mat[0][0] + matrixIn.mat[3][1] * matrix.mat[1][0] + matrixIn.mat[3][2] * matrix.mat[2][0]);
+	matrix.mat[3][1] = -(matrixIn.mat[3][0] * matrix.mat[0][1] + matrixIn.mat[3][1] * matrix.mat[1][1] + matrixIn.mat[3][2] * matrix.mat[2][1]);
+	matrix.mat[3][2] = -(matrixIn.mat[3][0] * matrix.mat[0][2] + matrixIn.mat[3][1] * matrix.mat[1][2] + matrixIn.mat[3][2] * matrix.mat[2][2]);
+	matrix.mat[3][3] = 1.0f;
+	return matrix;
+}
+
 Graphics::matrix4x4 Graphics::MakeIdentityMarix()
 {
 	matrix4x4 matrix;
@@ -210,6 +240,42 @@ Graphics::matrix4x4 Graphics::MakeProjectionMatrix(float FovDeg, float Aspect, f
 	return matrix;
 }
 
+Graphics::matrix4x4 Graphics::MakePointAtMatrix(vec3D position, vec3D target, vec3D UPvec)
+{
+	vec3D ForwardNew = SubVectors(target, position);
+	ForwardNew = Normalise(ForwardNew);
+
+	float DotProd = DotProduct(UPvec, ForwardNew);
+
+	vec3D a = MultVectorFloat(ForwardNew, DotProd);
+	vec3D UPvecNew = SubVectors(UPvec, a);
+	UPvecNew = Normalise(UPvecNew);
+
+	vec3D RightNew = CrossProd(UPvecNew, ForwardNew);
+
+	matrix4x4 matrix;
+	matrix.mat[0][0] = RightNew.x;
+	matrix.mat[0][1] = RightNew.y;
+	matrix.mat[0][2] = RightNew.z;
+	matrix.mat[0][3] = 0.0f;
+
+	matrix.mat[1][0] = UPvecNew.x;
+	matrix.mat[1][1] = UPvecNew.y;
+	matrix.mat[1][2] = UPvecNew.z;
+	matrix.mat[1][3] = 0.0f;
+
+	matrix.mat[2][0] = ForwardNew.x;
+	matrix.mat[2][1] = ForwardNew.y;
+	matrix.mat[2][2] = ForwardNew.z;
+	matrix.mat[2][3] = 0.0f;
+
+	matrix.mat[3][0] = position.x;
+	matrix.mat[3][1] = position.y;
+	matrix.mat[3][2] = position.z;
+	matrix.mat[3][3] = 1.0f;
+	return matrix;
+}
+
 Graphics::vec3D Graphics::AddVectors(vec3D& vec1, vec3D& vec2)
 {
 	return { vec1.x + vec2.x, vec1.y + vec2.y, vec1.z + vec2.z };
@@ -220,9 +286,14 @@ Graphics::vec3D Graphics::SubVectors(vec3D& vec1, vec3D& vec2)
 	return { vec1.x - vec2.x, vec1.y - vec2.y, vec1.z - vec2.z };
 }
 
-Graphics::vec3D Graphics::MultVector(vec3D& vec1, float& mult)
+Graphics::vec3D Graphics::MultVectorFloat(vec3D& vec1, float& mult)
 {
 	return { vec1.x * mult, vec1.y * mult, vec1.z * mult };
+}
+
+Graphics::vec3D Graphics::MultVectorVector(vec3D& vec1, vec3D& vec2)
+{
+	return { vec1.x * vec2.x, vec1.y * vec2.y, vec1.z * vec2.z };
 }
 
 Graphics::vec3D Graphics::DivVector(vec3D& vec1, float& div)
@@ -230,7 +301,7 @@ Graphics::vec3D Graphics::DivVector(vec3D& vec1, float& div)
 	return { vec1.x / div, vec1.y / div, vec1.z / div };
 }
 
-float Graphics::DotProduct(vec3D& vec1, vec3D& vec2)
+float Graphics::DotProduct(vec3D& vec1, vec3D &vec2)
 {
 	return vec1.x * vec2.x + vec1.y * vec2.y + vec1.z * vec2.z;
 }
@@ -253,6 +324,18 @@ Graphics::vec3D Graphics::CrossProd(vec3D& vec1, vec3D& vec2)
 	vec.y = vec1.z * vec2.x - vec1.x * vec2.z;
 	vec.z = vec1.x * vec2.y - vec1.y * vec2.x;
 	return vec;
+}
+
+Graphics::vec3D Graphics::PlaneIntersect(vec3D& PlanePoint, vec3D& PlaneNormal, vec3D& StartOfLine, vec3D& EndOfLine)
+{
+	PlaneNormal = Normalise(PlaneNormal);
+	float PlaneDotProd = -DotProduct(PlaneNormal, PlanePoint);
+	float ad = DotProduct(StartOfLine, PlaneNormal);
+	float bd = DotProduct(EndOfLine, PlaneNormal);
+	float t = (-PlaneDotProd - ad) / (bd - ad);
+	vec3D StartOfLinetoEnd = SubVectors(EndOfLine, StartOfLine);
+	vec3D IntersectToLine = MultVectorFloat(StartOfLinetoEnd, t);
+	return AddVectors(StartOfLine, IntersectToLine);
 }
 
 void Graphics::ClearScreen(float r, float g, float b)
@@ -416,24 +499,40 @@ void Graphics::DrawTriangle2filled(triangle &Triangle, Color &color)
 
 void Graphics::DrawMesh(mesh mesh, Color color)
 {
-	theta += 0.01f;
+	triangle TransformedTri;
+	triangle ViewedTri;
+	triangle ProjectedTri;
+
+	vec3D normal;
+	vec3D line1;
+	vec3D line2;
 	
 	matrix4x4 RotZMatrix = MakeZrotationMatrix(theta);
 
-	matrix4x4 RotXMatrix = MakeXrotationMatrix(theta);
+	matrix4x4 RotXMatrix = MakeXrotationMatrix(3.14159);
 
 	matrix4x4 TransMatrix = MakeTranslationMatrix(0.0f, 0.0f, 8.0f);
 
 	matrix4x4 WorldMatrix = MakeIdentityMarix();
 	WorldMatrix = MatrixMatrixMultiplication(RotZMatrix, RotXMatrix);
 	WorldMatrix = MatrixMatrixMultiplication(WorldMatrix, TransMatrix);
-	
-	triangle TransformedTri;
-	triangle ProjectedTri;
 
-	vec3D normal;
-	vec3D line1;
-	vec3D line2;
+	vec3D target = { 0.0f,0.0f,1.0f };
+
+	matrix4x4 CamRotYMatrix = MakeYrotationMatrix(camera.TargetRot.y);
+	vec3D lookDir = MatrixVectorMultiplication(target, CamRotYMatrix);
+	target = AddVectors(Graphics::camera.GlobalPos, lookDir);
+	matrix4x4 CamMatrix = MakePointAtMatrix(Graphics::camera.GlobalPos, target, Graphics::UpVec);
+
+
+	float temp = 0.1f;
+
+	vec3D tempVec = MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.z);
+
+	Graphics::camera.GlobalPos = Graphics::AddVectors(Graphics::camera.GlobalPos, tempVec);
+	Graphics::camera.GlobalPos.x += Graphics::camera.LocalPosDelta.x;
+
+	matrix4x4 ViewMatrix = MatrixInvertQuick(CamMatrix);
 
 	vector<triangle> TriangleToRasterVector;
 
@@ -455,7 +554,7 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 		normal = Normalise(normal);
 		//==========================================================================================================================
 
-		vec3D CameraRay = SubVectors(TransformedTri.vectors[0], camera);	//Get a ray from triangle to camera
+		vec3D CameraRay = SubVectors(TransformedTri.vectors[0], camera.GlobalPos);	//Get a ray from triangle to camera
 
 		if (DotProduct(normal, CameraRay) < 0.0f)
 		{
@@ -470,11 +569,18 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 			ProjectedTri.color = { 1.0f * DotProduct, 1.0f * DotProduct, 1.0f * DotProduct, 1.0f };
 			//==========================================================================================================================
 
+			//World to viewspace
+			//==========================================================================================================================
+			ViewedTri.vectors[0] = MatrixVectorMultiplication(TransformedTri.vectors[0], ViewMatrix);
+			ViewedTri.vectors[1] = MatrixVectorMultiplication(TransformedTri.vectors[1], ViewMatrix);
+			ViewedTri.vectors[2] = MatrixVectorMultiplication(TransformedTri.vectors[2], ViewMatrix);
+			//==========================================================================================================================
+
 			//Projection Matrix Multiplication
 			//==========================================================================================================================
-			ProjectedTri.vectors[0] = MatrixVectorMultiplication(TransformedTri.vectors[0], Graphics::ProjMatrix);
-			ProjectedTri.vectors[1] = MatrixVectorMultiplication(TransformedTri.vectors[1], Graphics::ProjMatrix);
-			ProjectedTri.vectors[2] = MatrixVectorMultiplication(TransformedTri.vectors[2], Graphics::ProjMatrix);
+			ProjectedTri.vectors[0] = MatrixVectorMultiplication(ViewedTri.vectors[0], Graphics::ProjMatrix);
+			ProjectedTri.vectors[1] = MatrixVectorMultiplication(ViewedTri.vectors[1], Graphics::ProjMatrix);
+			ProjectedTri.vectors[2] = MatrixVectorMultiplication(ViewedTri.vectors[2], Graphics::ProjMatrix);
 			//==========================================================================================================================
 
 			ProjectedTri.vectors[0] = DivVector(ProjectedTri.vectors[0], ProjectedTri.vectors[0].w);

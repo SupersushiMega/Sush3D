@@ -1,5 +1,10 @@
 #pragma once
 
+/*Sush3D
+
+Made by SupersushiMega with help of javidx9 code-It-Yourself 3D Graphics Engine youtube series
+*/
+
 #include <Windows.h>
 #include <d2d1.h>
 #include <d2d1_1.h>
@@ -70,14 +75,26 @@ public:
 		float strength = 1.0f;
 	};
 
-	GlobalLight globalLight;
-	vec3D camera;
+	struct Camera
+	{
+		vec3D LocalPosDelta = { 0.0f };
+		vec3D GlobalPos = {0.0f};
+		vec3D Rotation = {0.0f, 0.0f, 1.0f};
+		vec3D TargetRot = { 0.0f, 0.0f, 1.0f };
+	};
 
-private:
+	GlobalLight globalLight;
+
+	Camera camera;
+
+	vec3D UpVec = { 0.0f, 1.0f, 0.0f };
+
+public:
 	//Calculation functions
 	//==========================================================================================================================
 	vec3D MatrixVectorMultiplication(vec3D& inputVec, matrix4x4& matrix);
 	matrix4x4 MatrixMatrixMultiplication(matrix4x4& matrix1, matrix4x4& matrix2);
+	matrix4x4 MatrixInvertQuick(matrix4x4& matrixIn);	//Only Rotation and Translation Matrices
 	
 	matrix4x4 MakeIdentityMarix();
 	matrix4x4 MakeZrotationMatrix(float RadAngle);
@@ -85,10 +102,12 @@ private:
 	matrix4x4 MakeYrotationMatrix(float RadAngle);
 	matrix4x4 MakeTranslationMatrix(float x, float y, float z);
 	matrix4x4 MakeProjectionMatrix(float FovDeg, float Aspect, float DistFromScrn, float viewDist);
+	matrix4x4 MakePointAtMatrix(vec3D position, vec3D target, vec3D UPvec);
 
 	vec3D AddVectors(vec3D& vec1, vec3D& vec2);
 	vec3D SubVectors(vec3D& vec1, vec3D& vec2);
-	vec3D MultVector(vec3D& vec1, float& mult);
+	vec3D MultVectorFloat(vec3D& vec1, float& mult);	//Multiplies a vector by a float
+	vec3D MultVectorVector(vec3D& vec1, vec3D& mult);	//Multiplies two vectors
 	vec3D DivVector(vec3D& vec1, float& div);
 
 	float DotProduct(vec3D& vec1, vec3D& vec2);
@@ -96,6 +115,8 @@ private:
 	float VectorLength(vec3D& vec);
 	vec3D Normalise(vec3D& vec);
 	vec3D CrossProd(vec3D& vec1, vec3D& vec2);
+
+	vec3D PlaneIntersect(vec3D& PlanePoint, vec3D& PlaneNormal, vec3D& StartOfLine, vec3D& EndOfLine);
 	//==========================================================================================================================
 
 	//Draw functions

@@ -1,6 +1,6 @@
 /*Sush3D
 
-Made by SupersushiMega
+Made by SupersushiMega with help of javidx9 code-It-Yourself 3D Graphics Engine youtube series
 */
 
 #include <Windows.h>
@@ -110,6 +110,41 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 		else
 		{
 			//update
+
+			if (GetAsyncKeyState(L'A'))	//a
+			{
+				graphics->camera.LocalPosDelta.x = -0.1f;
+			}
+			else if (GetAsyncKeyState(L'D'))	//d
+			{
+				graphics->camera.LocalPosDelta.x = 0.1f;
+			}
+			else
+			{
+				graphics->camera.LocalPosDelta.x = 0.0f;
+			}
+
+			if (GetAsyncKeyState(L'W'))	//w
+			{
+				graphics->camera.LocalPosDelta.z = 0.1f;
+			}
+			else if (GetAsyncKeyState(L'S'))	//s
+			{
+				graphics->camera.LocalPosDelta.z = -0.1f;
+			}
+			else
+			{
+				graphics->camera.LocalPosDelta.z = 0.0f;
+			}
+
+			if (GetAsyncKeyState(VK_LEFT))	//Left rotation
+			{
+				graphics->camera.TargetRot.y += 0.1f;
+			}
+			else if (GetAsyncKeyState(VK_RIGHT))	//Right rotation
+			{
+				graphics->camera.TargetRot.y += -0.1f;
+			}
 
 			//render
 			graphics->BeginDraw();
