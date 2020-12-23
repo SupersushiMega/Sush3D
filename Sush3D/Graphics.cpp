@@ -7,7 +7,6 @@
 
 float theta = 0;
 
-
 Graphics::Graphics()
 {
 	factory = NULL;
@@ -46,6 +45,9 @@ bool Graphics::Init(HWND windowHandle, float FOV, float DistancefromScreen, floa
 	RECT resolution;
 	GetClientRect(windowHandle, &resolution);
 
+	Graphics::Resolution[0] = resolution.bottom;
+	Graphics::Resolution[1] = resolution.right;
+
 	res = factory->CreateHwndRenderTarget
 	(
 		D2D1::RenderTargetProperties(),
@@ -60,6 +62,8 @@ bool Graphics::Init(HWND windowHandle, float FOV, float DistancefromScreen, floa
 		return false;
 	}
 
+	rendertarget->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+
 	res = rendertarget->CreateSolidColorBrush(D2D1::ColorF(0, 0, 0, 0), &Solidbrush);
 
 	if (res != S_OK)
@@ -67,24 +71,7 @@ bool Graphics::Init(HWND windowHandle, float FOV, float DistancefromScreen, floa
 		return false;
 	}
 
-	//Projection Matrix
-	//==========================================================================================================================
-	Graphics::Resolution[0] = resolution.right;
-	Graphics::Resolution[1] = resolution.bottom;
-	Graphics::fov = FOV;
-	Graphics::DistfromScreen = DistancefromScreen;
-	Graphics::ViewingDist = ViewingDistance;
-	Graphics::aspect = (float)resolution.bottom / (float)resolution.right;
-	Graphics::XYcoef = 1.0f / tanf(Graphics::fov * 0.5f / 180.0f * 3.14159f);
-
-	Graphics::ProjMatrix.mat[0][0] = Graphics::aspect * Graphics::XYcoef;;
-	Graphics::ProjMatrix.mat[1][1] = Graphics::XYcoef;
-	Graphics::ProjMatrix.mat[2][2] = Graphics::ViewingDist / (Graphics::ViewingDist - Graphics::DistfromScreen);
-	Graphics::ProjMatrix.mat[3][2] = (-Graphics::ViewingDist * Graphics::DistfromScreen) / (Graphics::ViewingDist - Graphics::DistfromScreen);
-	Graphics::ProjMatrix.mat[2][3] = 1.0f;
-	Graphics::ProjMatrix.mat[3][3] = 0.0f;
-	//==========================================================================================================================
-
+	Graphics::ProjMatrix = MakeProjectionMatrix(90.0f, (float)Graphics::Resolution[0] / (float)Graphics::Resolution[1], 0.1f, 1000.0f);
 
 	return true;
 }
@@ -118,7 +105,7 @@ bool Graphics::mesh::LoadFromObj(string filename)
 
 		else if (line[0] == 'f')
 		{
-			uint64_t face[3];
+			uint64_t face[3] = {0};
 			stream >> Waste >> face[0] >> face[1] >> face[2];
 			tri.push_back({ verts[face[0] - 1], verts[face[1] - 1] , verts[face[2] - 1] });
 		}
@@ -127,21 +114,146 @@ bool Graphics::mesh::LoadFromObj(string filename)
 	return true;
 };
 
-void Graphics::MatrixVectorMultiplication(vec3D& inputVec, vec3D& outputVec, matrix4x4& matrix)
+Graphics::vec3D Graphics::MatrixVectorMultiplication(vec3D& inputVec, matrix4x4& matrix)
 {
-	outputVec.x = inputVec.x * matrix.mat[0][0] + inputVec.y * matrix.mat[1][0] + inputVec.z * matrix.mat[2][0] + matrix.mat[3][0];
-	outputVec.y = inputVec.x * matrix.mat[0][1] + inputVec.y * matrix.mat[1][1] + inputVec.z * matrix.mat[2][1] + matrix.mat[3][1];
-	outputVec.z = inputVec.x * matrix.mat[0][2] + inputVec.y * matrix.mat[1][2] + inputVec.z * matrix.mat[2][2] + matrix.mat[3][2];
-	float w = inputVec.x * matrix.mat[0][3] + inputVec.y * matrix.mat[1][3] + inputVec.z * matrix.mat[2][3] + matrix.mat[3][3];
+	vec3D outputVec;
+	outputVec.x = inputVec.x * matrix.mat[0][0] + inputVec.y * matrix.mat[1][0] + inputVec.z * matrix.mat[2][0] + inputVec.w * matrix.mat[3][0];
+	outputVec.y = inputVec.x * matrix.mat[0][1] + inputVec.y * matrix.mat[1][1] + inputVec.z * matrix.mat[2][1] + inputVec.w * matrix.mat[3][1];
+	outputVec.z = inputVec.x * matrix.mat[0][2] + inputVec.y * matrix.mat[1][2] + inputVec.z * matrix.mat[2][2] + inputVec.w * matrix.mat[3][2];
+	outputVec.w = inputVec.x * matrix.mat[0][3] + inputVec.y * matrix.mat[1][3] + inputVec.z * matrix.mat[2][3] + inputVec.w * matrix.mat[3][3];
 
-	if (w != 0.0f)
-	{
-		outputVec.x /= w;
-		outputVec.y /= w;
-		outputVec.z /= w;
-	}
+	return outputVec;
 }
 
+Graphics::matrix4x4 Graphics::MatrixMatrixMultiplication(matrix4x4& matrix1, matrix4x4& matrix2)
+{
+	matrix4x4 matrix;
+	for (uint8_t x = 0; x < 4; x++)
+	{
+		for (uint8_t y = 0; y < 4; y++)
+		{
+			matrix.mat[y][x] = matrix1.mat[y][0] * matrix2.mat[0][x] + matrix1.mat[y][1] * matrix2.mat[1][x] + matrix1.mat[y][2] * matrix2.mat[2][x] + matrix1.mat[y][3] * matrix2.mat[3][x];
+		}
+	}
+	return matrix;
+}
+
+Graphics::matrix4x4 Graphics::MakeIdentityMarix()
+{
+	matrix4x4 matrix;
+	matrix.mat[0][0] = 1.0f;
+	matrix.mat[1][1] = 1.0f;
+	matrix.mat[2][2] = 1.0f;
+	matrix.mat[3][3] = 1.0f;
+	return matrix;
+}
+
+Graphics::matrix4x4 Graphics::MakeZrotationMatrix(float RadAngle)
+{
+	matrix4x4 matrix;
+	matrix.mat[0][0] = cosf(RadAngle);
+	matrix.mat[0][1] = sinf(RadAngle);
+	matrix.mat[1][0] = -sinf(RadAngle);
+	matrix.mat[1][1] = cosf(RadAngle);
+	matrix.mat[2][2] = 1.0f;
+	matrix.mat[3][3] = 1.0f;
+	return matrix;
+}
+
+Graphics::matrix4x4 Graphics::MakeXrotationMatrix(float RadAngle)
+{
+	matrix4x4 matrix;
+	matrix.mat[0][0] = 1.0f;
+	matrix.mat[1][1] = cosf(RadAngle);
+	matrix.mat[1][2] = sinf(RadAngle);
+	matrix.mat[2][1] = -sinf(RadAngle);
+	matrix.mat[2][2] = cosf(RadAngle);
+	matrix.mat[3][3] = 1.0f;
+	return matrix;
+}
+
+Graphics::matrix4x4 Graphics::MakeYrotationMatrix(float RadAngle)
+{
+	matrix4x4 matrix;
+	matrix.mat[0][0] = cosf(RadAngle);
+	matrix.mat[0][2] = sinf(RadAngle);
+	matrix.mat[2][0] = -sinf(RadAngle);
+	matrix.mat[1][1] = 1.0f;
+	matrix.mat[2][2] = cosf(RadAngle);
+	matrix.mat[3][3] = 1.0f;
+	return matrix;
+}
+
+Graphics::matrix4x4 Graphics::MakeTranslationMatrix(float x, float y, float z)
+{
+	matrix4x4 matrix;
+	matrix.mat[0][0] = 1.0f;
+	matrix.mat[1][1] = 1.0f;
+	matrix.mat[2][2] = 1.0f;
+	matrix.mat[3][3] = 1.0f;
+	matrix.mat[3][0] = x;
+	matrix.mat[3][1] = y;
+	matrix.mat[3][2] = z;
+	return matrix;
+}
+
+Graphics::matrix4x4 Graphics::MakeProjectionMatrix(float FovDeg, float Aspect, float DistFromScrn, float viewDist)
+{
+	float FovRadian = 1.0f / tanf(FovDeg * 0.5f / 180.0f * 3.14159f);
+	matrix4x4 matrix;
+	matrix.mat[0][0] = Aspect * FovRadian;
+	matrix.mat[1][1] = FovRadian;
+	matrix.mat[2][2] = viewDist / (viewDist - DistFromScrn);
+	matrix.mat[3][2] = (-viewDist * DistFromScrn) / (viewDist - DistFromScrn);
+	matrix.mat[2][3] = 1.0f;
+	matrix.mat[3][3] = 0.0f;
+	return matrix;
+}
+
+Graphics::vec3D Graphics::AddVectors(vec3D& vec1, vec3D& vec2)
+{
+	return { vec1.x + vec2.x, vec1.y + vec2.y, vec1.z + vec2.z };
+}
+
+Graphics::vec3D Graphics::SubVectors(vec3D& vec1, vec3D& vec2)
+{
+	return { vec1.x - vec2.x, vec1.y - vec2.y, vec1.z - vec2.z };
+}
+
+Graphics::vec3D Graphics::MultVector(vec3D& vec1, float& mult)
+{
+	return { vec1.x * mult, vec1.y * mult, vec1.z * mult };
+}
+
+Graphics::vec3D Graphics::DivVector(vec3D& vec1, float& div)
+{
+	return { vec1.x / div, vec1.y / div, vec1.z / div };
+}
+
+float Graphics::DotProduct(vec3D& vec1, vec3D& vec2)
+{
+	return vec1.x * vec2.x + vec1.y * vec2.y + vec1.z * vec2.z;
+}
+
+float Graphics::VectorLength(vec3D& vec)
+{
+	return sqrtf(DotProduct(vec, vec));
+}
+
+Graphics::vec3D Graphics::Normalise(vec3D& vec)
+{
+	float length = VectorLength(vec);
+	return { vec.x / length, vec.y / length, vec.z / length, };
+}
+
+Graphics::vec3D Graphics::CrossProd(vec3D& vec1, vec3D& vec2)
+{
+	vec3D vec;
+	vec.x = vec1.y * vec2.z - vec1.z * vec2.y;
+	vec.y = vec1.z * vec2.x - vec1.x * vec2.z;
+	vec.z = vec1.x * vec2.y - vec1.y * vec2.x;
+	return vec;
+}
 
 void Graphics::ClearScreen(float r, float g, float b)
 {
@@ -305,30 +417,18 @@ void Graphics::DrawTriangle2filled(triangle &Triangle, Color &color)
 void Graphics::DrawMesh(mesh mesh, Color color)
 {
 	theta += 0.01f;
-	//Z Rotation Matrix
-	//==========================================================================================================================
-	Graphics::RotZMatrix.mat[0][0] = cosf(theta);
-	Graphics::RotZMatrix.mat[0][1] = sinf(theta);
-	Graphics::RotZMatrix.mat[1][0] = -sinf(theta);
-	Graphics::RotZMatrix.mat[1][1] = cosf(theta);
-	Graphics::RotZMatrix.mat[2][2] = 1;
-	Graphics::RotZMatrix.mat[3][3] = 1;
-	//==========================================================================================================================
-
-	//X Rotation Matrix
-	//==========================================================================================================================
-	Graphics::RotXMatrix.mat[0][0] = 1;
-	Graphics::RotXMatrix.mat[1][1] = cosf(theta * 0.5f);
-	Graphics::RotXMatrix.mat[1][2] = sinf(theta * 0.5f);
-	Graphics::RotXMatrix.mat[2][1] = -sinf(theta * 0.5f);
-	Graphics::RotXMatrix.mat[2][2] = cosf(theta * 0.5f);
-	Graphics::RotXMatrix.mat[3][3] = 1;
-	//==========================================================================================================================
 	
+	matrix4x4 RotZMatrix = MakeZrotationMatrix(theta);
 
-	triangle ZrotadetTri;
-	triangle ZXrotadetTri;
-	triangle TranslatedTri;
+	matrix4x4 RotXMatrix = MakeXrotationMatrix(theta);
+
+	matrix4x4 TransMatrix = MakeTranslationMatrix(0.0f, 0.0f, 8.0f);
+
+	matrix4x4 WorldMatrix = MakeIdentityMarix();
+	WorldMatrix = MatrixMatrixMultiplication(RotZMatrix, RotXMatrix);
+	WorldMatrix = MatrixMatrixMultiplication(WorldMatrix, TransMatrix);
+	
+	triangle TransformedTri;
 	triangle ProjectedTri;
 
 	vec3D normal;
@@ -341,89 +441,62 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 	//==========================================================================================================================
 	for (auto tri : mesh.tri)
 	{
-
-		float NormalLength = 0;
-
-		MatrixVectorMultiplication(tri.vectors[0], ZrotadetTri.vectors[0], Graphics::RotZMatrix);
-		MatrixVectorMultiplication(tri.vectors[1], ZrotadetTri.vectors[1], Graphics::RotZMatrix);
-		MatrixVectorMultiplication(tri.vectors[2], ZrotadetTri.vectors[2], Graphics::RotZMatrix);
-
-		MatrixVectorMultiplication(ZrotadetTri.vectors[0], ZXrotadetTri.vectors[0], Graphics::RotXMatrix);
-		MatrixVectorMultiplication(ZrotadetTri.vectors[1], ZXrotadetTri.vectors[1], Graphics::RotXMatrix);
-		MatrixVectorMultiplication(ZrotadetTri.vectors[2], ZXrotadetTri.vectors[2], Graphics::RotXMatrix);
-
-		//z translation
-		//==========================================================================================================================
-		TranslatedTri = ZXrotadetTri;
-		TranslatedTri.vectors[0].z = ZXrotadetTri.vectors[0].z + 8.0f;
-		TranslatedTri.vectors[1].z = ZXrotadetTri.vectors[1].z + 8.0f;
-		TranslatedTri.vectors[2].z = ZXrotadetTri.vectors[2].z + 8.0f;
-		//==========================================================================================================================
+		TransformedTri.vectors[0] = MatrixVectorMultiplication(tri.vectors[0], WorldMatrix);
+		TransformedTri.vectors[1] = MatrixVectorMultiplication(tri.vectors[1], WorldMatrix);
+		TransformedTri.vectors[2] = MatrixVectorMultiplication(tri.vectors[2], WorldMatrix);
 
 		//Normal Calculation
 		//==========================================================================================================================
-		line1.x = TranslatedTri.vectors[1].x - TranslatedTri.vectors[0].x;
-		line1.y = TranslatedTri.vectors[1].y - TranslatedTri.vectors[0].y;
-		line1.z = TranslatedTri.vectors[1].z - TranslatedTri.vectors[0].z;
+		line1 = SubVectors(TransformedTri.vectors[1], TransformedTri.vectors[0]);
+		line2 = SubVectors(TransformedTri.vectors[2], TransformedTri.vectors[0]);
 
-		line2.x = TranslatedTri.vectors[2].x - TranslatedTri.vectors[0].x;
-		line2.y = TranslatedTri.vectors[2].y - TranslatedTri.vectors[0].y;
-		line2.z = TranslatedTri.vectors[2].z - TranslatedTri.vectors[0].z;
+		normal = CrossProd(line1, line2);
 
-		normal.x = line1.y * line2.z - line1.z * line2.y;
-		normal.y = line1.z * line2.x - line1.x * line2.z;
-		normal.z = line1.x * line2.y - line1.y * line2.x;
-
-		NormalLength = sqrtf(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
-
-		normal.x /= NormalLength;
-		normal.y /= NormalLength;
-		normal.z /= NormalLength;
+		normal = Normalise(normal);
 		//==========================================================================================================================
 
+		vec3D CameraRay = SubVectors(TransformedTri.vectors[0], camera);	//Get a ray from triangle to camera
 
-		if (normal.x * (TranslatedTri.vectors[0].x - Graphics::camera.x) + normal.y * (TranslatedTri.vectors[0].y - Graphics::camera.y) + normal.z * (TranslatedTri.vectors[0].z - Graphics::camera.z) < 0.0f)
+		if (DotProduct(normal, CameraRay) < 0.0f)
 		{
-			//Projection Matrix Multiplication
-			//==========================================================================================================================
-			MatrixVectorMultiplication(TranslatedTri.vectors[0], ProjectedTri.vectors[0], Graphics::ProjMatrix);
-			MatrixVectorMultiplication(TranslatedTri.vectors[1], ProjectedTri.vectors[1], Graphics::ProjMatrix);
-			MatrixVectorMultiplication(TranslatedTri.vectors[2], ProjectedTri.vectors[2], Graphics::ProjMatrix);
-			//==========================================================================================================================
-
-			//Scaling
-			//==========================================================================================================================
-			ProjectedTri.vectors[0].x += 1.0f;
-			ProjectedTri.vectors[0].y += 1.0f;
-
-			ProjectedTri.vectors[1].x += 1.0f;
-			ProjectedTri.vectors[1].y += 1.0f;
-
-			ProjectedTri.vectors[2].x += 1.0f;
-			ProjectedTri.vectors[2].y += 1.0f;
-
-
-			ProjectedTri.vectors[0].x *= 0.5f * (float)Graphics::Resolution[0];
-			ProjectedTri.vectors[0].y *= 0.5f * (float)Graphics::Resolution[1];
-
-			ProjectedTri.vectors[1].x *= 0.5f * (float)Graphics::Resolution[0];
-			ProjectedTri.vectors[1].y *= 0.5f * (float)Graphics::Resolution[1];
-
-			ProjectedTri.vectors[2].x *= 0.5f * (float)Graphics::Resolution[0];
-			ProjectedTri.vectors[2].y *= 0.5f * (float)Graphics::Resolution[1];
-			//==========================================================================================================================
-
 			//lighting
 			//==========================================================================================================================
 			//Normalize light
-			float NormalizedLight = sqrt(Graphics::globalLight.Direction.x * Graphics::globalLight.Direction.x + Graphics::globalLight.Direction.y * Graphics::globalLight.Direction.y + Graphics::globalLight.Direction.z * Graphics::globalLight.Direction.z);
-			Graphics::globalLight.Direction.x /= NormalizedLight;
-			Graphics::globalLight.Direction.y /= NormalizedLight;
-			Graphics::globalLight.Direction.z /= NormalizedLight;
+			vec3D LightDirGlobal = { Graphics::globalLight.Direction.x, Graphics::globalLight.Direction.y, Graphics::globalLight.Direction.z };
+			LightDirGlobal = Normalise(LightDirGlobal);
 
-			float DotProduct = normal.x * Graphics::globalLight.Direction.x + normal.y * Graphics::globalLight.Direction.y + normal.z * Graphics::globalLight.Direction.z;
+			float DotProduct = max(0.1f, Graphics::DotProduct(LightDirGlobal, normal));
 
 			ProjectedTri.color = { 1.0f * DotProduct, 1.0f * DotProduct, 1.0f * DotProduct, 1.0f };
+			//==========================================================================================================================
+
+			//Projection Matrix Multiplication
+			//==========================================================================================================================
+			ProjectedTri.vectors[0] = MatrixVectorMultiplication(TransformedTri.vectors[0], Graphics::ProjMatrix);
+			ProjectedTri.vectors[1] = MatrixVectorMultiplication(TransformedTri.vectors[1], Graphics::ProjMatrix);
+			ProjectedTri.vectors[2] = MatrixVectorMultiplication(TransformedTri.vectors[2], Graphics::ProjMatrix);
+			//==========================================================================================================================
+
+			ProjectedTri.vectors[0] = DivVector(ProjectedTri.vectors[0], ProjectedTri.vectors[0].w);
+			ProjectedTri.vectors[1] = DivVector(ProjectedTri.vectors[1], ProjectedTri.vectors[1].w);
+			ProjectedTri.vectors[2] = DivVector(ProjectedTri.vectors[2], ProjectedTri.vectors[2].w);
+
+			//Scaling
+			//==========================================================================================================================
+			vec3D ViewOffset = {1.0f, 1.0f, 0.0f};
+
+			ProjectedTri.vectors[0] = AddVectors(ProjectedTri.vectors[0], ViewOffset);
+			ProjectedTri.vectors[1] = AddVectors(ProjectedTri.vectors[1], ViewOffset);
+			ProjectedTri.vectors[2] = AddVectors(ProjectedTri.vectors[2], ViewOffset);
+
+			ProjectedTri.vectors[0].x *= 0.5f * (float)Graphics::Resolution[1];
+			ProjectedTri.vectors[0].y *= 0.5f * (float)Graphics::Resolution[0];
+
+			ProjectedTri.vectors[1].x *= 0.5f * (float)Graphics::Resolution[1];
+			ProjectedTri.vectors[1].y *= 0.5f * (float)Graphics::Resolution[0];
+
+			ProjectedTri.vectors[2].x *= 0.5f * (float)Graphics::Resolution[1];
+			ProjectedTri.vectors[2].y *= 0.5f * (float)Graphics::Resolution[0];
 			//==========================================================================================================================
 
 			TriangleToRasterVector.push_back(ProjectedTri);

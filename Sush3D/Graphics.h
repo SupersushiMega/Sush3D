@@ -34,9 +34,6 @@ public:
 
 	matrix4x4 ProjMatrix;
 
-	matrix4x4 RotZMatrix;
-	matrix4x4 RotXMatrix;
-
 	struct Color
 	{
 		float r = 1.0f;
@@ -47,9 +44,10 @@ public:
 
 	struct vec3D
 	{
-		float x = 0;
-		float y = 0;
-		float z = 0;
+		float x = 0.0f;
+		float y = 0.0f;
+		float z = 0.0f;
+		float w = 1.0f;
 	};
 
 	struct triangle
@@ -78,7 +76,26 @@ public:
 private:
 	//Calculation functions
 	//==========================================================================================================================
-	void MatrixVectorMultiplication(vec3D& inputVec, vec3D& outputVec, matrix4x4& matrix);
+	vec3D MatrixVectorMultiplication(vec3D& inputVec, matrix4x4& matrix);
+	matrix4x4 MatrixMatrixMultiplication(matrix4x4& matrix1, matrix4x4& matrix2);
+	
+	matrix4x4 MakeIdentityMarix();
+	matrix4x4 MakeZrotationMatrix(float RadAngle);
+	matrix4x4 MakeXrotationMatrix(float RadAngle);
+	matrix4x4 MakeYrotationMatrix(float RadAngle);
+	matrix4x4 MakeTranslationMatrix(float x, float y, float z);
+	matrix4x4 MakeProjectionMatrix(float FovDeg, float Aspect, float DistFromScrn, float viewDist);
+
+	vec3D AddVectors(vec3D& vec1, vec3D& vec2);
+	vec3D SubVectors(vec3D& vec1, vec3D& vec2);
+	vec3D MultVector(vec3D& vec1, float& mult);
+	vec3D DivVector(vec3D& vec1, float& div);
+
+	float DotProduct(vec3D& vec1, vec3D& vec2);
+	
+	float VectorLength(vec3D& vec);
+	vec3D Normalise(vec3D& vec);
+	vec3D CrossProd(vec3D& vec1, vec3D& vec2);
 	//==========================================================================================================================
 
 	//Draw functions
