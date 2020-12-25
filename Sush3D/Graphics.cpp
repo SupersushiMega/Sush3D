@@ -4,6 +4,7 @@
 #include <fstream>
 #include <strstream>
 #include <algorithm>
+#include <list>
 
 /*Sush3D
 
@@ -338,6 +339,103 @@ Graphics::vec3D Graphics::PlaneIntersect(vec3D& PlanePoint, vec3D& PlaneNormal, 
 	return AddVectors(StartOfLine, IntersectToLine);
 }
 
+uint16_t Graphics::TrianglePlaneClip(vec3D PlanePoint, vec3D PlaneNormal, triangle& InputTriangle, triangle& OutputTriangle1, triangle& OutputTriangle2)
+{
+	PlaneNormal = Normalise(PlaneNormal);
+
+	auto distance = [&](vec3D& point)
+	{
+		vec3D normal = Normalise(point);
+		return(PlaneNormal.x * point.x + PlaneNormal.y * point.y + PlaneNormal.z * point.z - DotProduct(PlaneNormal, PlanePoint));
+	};
+
+	vec3D* InPoints[3];
+	uint8_t InPointCount = 0;
+
+	vec3D* OutPoints[3];
+	uint8_t OutPointCount = 0;
+
+	float dist0 = distance(InputTriangle.vectors[0]);
+	float dist1 = distance(InputTriangle.vectors[1]);
+	float dist2 = distance(InputTriangle.vectors[2]);
+
+	if (dist0 >= 0)
+	{
+		InPoints[InPointCount++] = &InputTriangle.vectors[0];
+	}
+	else
+	{
+		OutPoints[OutPointCount++] = &InputTriangle.vectors[0];
+	}
+	
+	if (dist1 >= 0)
+	{
+		InPoints[InPointCount++] = &InputTriangle.vectors[1];
+	}
+	else
+	{
+		OutPoints[OutPointCount++] = &InputTriangle.vectors[1];
+	}
+	
+	if (dist2 >= 0)
+	{
+		InPoints[InPointCount++] = &InputTriangle.vectors[2];
+	}
+	else
+	{
+		OutPoints[OutPointCount++] = &InputTriangle.vectors[2];
+	}
+
+	if (InPointCount == 0)
+	{
+		return 0;
+	}
+
+	if (InPointCount == 3)
+	{
+		OutputTriangle1 = InputTriangle;
+		return 1;
+	}
+
+	if (InPointCount == 1 && OutPointCount == 2)
+	{
+		//OutputTriangle1.color = InputTriangle.color;
+		OutputTriangle1.color = { 0.0f, 0.0f, 1.0f };
+
+		OutputTriangle1.vectors[0] = *InPoints[0];
+
+		OutputTriangle1.vectors[1] = PlaneIntersect(PlanePoint, PlaneNormal, *InPoints[0], *OutPoints[0]);
+		OutputTriangle1.vectors[2] = PlaneIntersect(PlanePoint, PlaneNormal, *InPoints[0], *OutPoints[1]);
+
+		return 1;
+	}
+
+	if (InPointCount == 2 && OutPointCount == 1)
+	{
+		//OutputTriangle1.color = InputTriangle.color;
+		//OutputTriangle2.color = InputTriangle.color;
+
+		OutputTriangle1.color.r = 1.0f;
+		OutputTriangle1.color.g = 0.0f;
+		OutputTriangle1.color.b = 0.0f;
+
+		OutputTriangle2.color.r = 0.0f;
+		OutputTriangle2.color.g = 1.0f;
+		OutputTriangle2.color.b = 0.0f;
+
+		OutputTriangle1.vectors[0] = *InPoints[0];
+		OutputTriangle1.vectors[1] = *InPoints[1];
+		OutputTriangle1.vectors[2] = PlaneIntersect(PlanePoint, PlaneNormal, *InPoints[0], *OutPoints[0]);
+		
+		
+		OutputTriangle2.vectors[0] = *InPoints[1];
+		OutputTriangle2.vectors[1] = OutputTriangle1.vectors[2];
+		OutputTriangle2.vectors[2] = PlaneIntersect(PlanePoint, PlaneNormal, *InPoints[1], *OutPoints[0]);
+		
+		return 2;
+	}
+}
+
 void Graphics::ClearScreen(float r, float g, float b)
 {
 	rendertarget->Clear(D2D1::ColorF(r, g, b));
@@ -509,7 +607,7 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 	
 	matrix4x4 RotZMatrix = MakeZrotationMatrix(theta);
 
-	matrix4x4 RotXMatrix = MakeXrotationMatrix(3.14159);
+	matrix4x4 RotXMatrix = MakeXrotationMatrix(0.0f);
 
 	matrix4x4 TransMatrix = MakeTranslationMatrix(0.0f, 0.0f, 8.0f);
 
@@ -558,17 +656,6 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 
 		if (DotProduct(normal, CameraRay) < 0.0f)
 		{
-			//lighting
-			//==========================================================================================================================
-			//Normalize light
-			vec3D LightDirGlobal = { Graphics::globalLight.Direction.x, Graphics::globalLight.Direction.y, Graphics::globalLight.Direction.z };
-			LightDirGlobal = Normalise(LightDirGlobal);
-
-			float DotProduct = max(0.1f, Graphics::DotProduct(LightDirGlobal, normal));
-
-			ProjectedTri.color = { 1.0f * DotProduct, 1.0f * DotProduct, 1.0f * DotProduct, 1.0f };
-			//==========================================================================================================================
-
 			//World to viewspace
 			//==========================================================================================================================
 			ViewedTri.vectors[0] = MatrixVectorMultiplication(TransformedTri.vectors[0], ViewMatrix);
@@ -576,38 +663,61 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 			ViewedTri.vectors[2] = MatrixVectorMultiplication(TransformedTri.vectors[2], ViewMatrix);
 			//==========================================================================================================================
 
-			//Projection Matrix Multiplication
+			//Clipping
 			//==========================================================================================================================
-			ProjectedTri.vectors[0] = MatrixVectorMultiplication(ViewedTri.vectors[0], Graphics::ProjMatrix);
-			ProjectedTri.vectors[1] = MatrixVectorMultiplication(ViewedTri.vectors[1], Graphics::ProjMatrix);
-			ProjectedTri.vectors[2] = MatrixVectorMultiplication(ViewedTri.vectors[2], Graphics::ProjMatrix);
-			//==========================================================================================================================
+			uint8_t ClippedTriCount = 0;
+			triangle ClippedTri[2];
 
-			ProjectedTri.vectors[0] = DivVector(ProjectedTri.vectors[0], ProjectedTri.vectors[0].w);
-			ProjectedTri.vectors[1] = DivVector(ProjectedTri.vectors[1], ProjectedTri.vectors[1].w);
-			ProjectedTri.vectors[2] = DivVector(ProjectedTri.vectors[2], ProjectedTri.vectors[2].w);
-
-			//Scaling
-			//==========================================================================================================================
-			vec3D ViewOffset = {1.0f, 1.0f, 0.0f};
-
-			ProjectedTri.vectors[0] = AddVectors(ProjectedTri.vectors[0], ViewOffset);
-			ProjectedTri.vectors[1] = AddVectors(ProjectedTri.vectors[1], ViewOffset);
-			ProjectedTri.vectors[2] = AddVectors(ProjectedTri.vectors[2], ViewOffset);
-
-			ProjectedTri.vectors[0].x *= 0.5f * (float)Graphics::Resolution[1];
-			ProjectedTri.vectors[0].y *= 0.5f * (float)Graphics::Resolution[0];
-
-			ProjectedTri.vectors[1].x *= 0.5f * (float)Graphics::Resolution[1];
-			ProjectedTri.vectors[1].y *= 0.5f * (float)Graphics::Resolution[0];
-
-			ProjectedTri.vectors[2].x *= 0.5f * (float)Graphics::Resolution[1];
-			ProjectedTri.vectors[2].y *= 0.5f * (float)Graphics::Resolution[0];
+			ClippedTriCount = TrianglePlaneClip({ 0.0f, 0.0f, 2.1f }, { 0.0f, 0.0f, 1.0f }, ViewedTri, ClippedTri[0], ClippedTri[1]);
 			//==========================================================================================================================
 
-			TriangleToRasterVector.push_back(ProjectedTri);
+			for (uint8_t n = 0; n < ClippedTriCount; n++)
+			{
 
-			//DrawTriangle2filled(ProjectedTri, color);
+				//lighting
+				//==========================================================================================================================
+				//Normalize light
+				vec3D LightDirGlobal = { Graphics::globalLight.Direction.x, Graphics::globalLight.Direction.y, Graphics::globalLight.Direction.z };
+				LightDirGlobal = Normalise(LightDirGlobal);
+
+				float DotProduct = max(0.1f, Graphics::DotProduct(LightDirGlobal, normal));
+
+				ProjectedTri.color = { ClippedTri[n].color.r * DotProduct, ClippedTri[n].color.g * DotProduct, ClippedTri[n].color.b * DotProduct, ClippedTri[n].color.a};
+				//==========================================================================================================================
+
+				//Projection Matrix Multiplication
+				//==========================================================================================================================
+				ProjectedTri.vectors[0] = MatrixVectorMultiplication(ClippedTri[n].vectors[0], Graphics::ProjMatrix);
+				ProjectedTri.vectors[1] = MatrixVectorMultiplication(ClippedTri[n].vectors[1], Graphics::ProjMatrix);
+				ProjectedTri.vectors[2] = MatrixVectorMultiplication(ClippedTri[n].vectors[2], Graphics::ProjMatrix);
+				//==========================================================================================================================
+
+				ProjectedTri.vectors[0] = DivVector(ProjectedTri.vectors[0], ProjectedTri.vectors[0].w);
+				ProjectedTri.vectors[1] = DivVector(ProjectedTri.vectors[1], ProjectedTri.vectors[1].w);
+				ProjectedTri.vectors[2] = DivVector(ProjectedTri.vectors[2], ProjectedTri.vectors[2].w);
+
+				//Scaling
+				//==========================================================================================================================
+				vec3D ViewOffset = { 1.0f, 1.0f, 0.0f };
+
+				ProjectedTri.vectors[0] = AddVectors(ProjectedTri.vectors[0], ViewOffset);
+				ProjectedTri.vectors[1] = AddVectors(ProjectedTri.vectors[1], ViewOffset);
+				ProjectedTri.vectors[2] = AddVectors(ProjectedTri.vectors[2], ViewOffset);
+
+				ProjectedTri.vectors[0].x *= 0.5f * (float)Graphics::Resolution[1];
+				ProjectedTri.vectors[0].y *= 0.5f * (float)Graphics::Resolution[0];
+
+				ProjectedTri.vectors[1].x *= 0.5f * (float)Graphics::Resolution[1];
+				ProjectedTri.vectors[1].y *= 0.5f * (float)Graphics::Resolution[0];
+
+				ProjectedTri.vectors[2].x *= 0.5f * (float)Graphics::Resolution[1];
+				ProjectedTri.vectors[2].y *= 0.5f * (float)Graphics::Resolution[0];
+				//==========================================================================================================================
+
+				TriangleToRasterVector.push_back(ProjectedTri);
+
+				//DrawTriangle2filled(ProjectedTri, color);
+			}
 		}
 	}
 
@@ -618,9 +728,55 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 			return z1 > z2;
 		});
 
-	for (auto& ProjectedTri : TriangleToRasterVector)
+	for (auto& TriToRast : TriangleToRasterVector)
 	{
-		DrawTriangle2filled(ProjectedTri, ProjectedTri.color);
+		triangle clippedTri[2];
+		list<triangle> TriangleList;
+		TriangleList.push_back(TriToRast);
+		uint8_t newTriCount = 1;
+		uint32_t TriAddCount = 0;
+
+		for (uint8_t Case = 0; Case < 4; Case++)
+		{
+			while (newTriCount > 0)
+			{
+				triangle testTri = TriangleList.front();
+				TriangleList.pop_front();
+				newTriCount--;
+
+				switch (Case)
+				{
+					case 0:
+					{
+						TriAddCount = TrianglePlaneClip({ 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+						break;
+					}
+					case 1:
+					{
+						TriAddCount = TrianglePlaneClip({ 0.0f, (float)Resolution[0] - 1, 0.0f }, { 0.0f, -1.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+						break;
+					}
+					case 2:
+					{
+						TriAddCount = TrianglePlaneClip({ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+						break;
+					}
+					case 3:
+					{
+						TriAddCount = TrianglePlaneClip({ (float)Resolution[1] - 1, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+						break;
+					}
+				}
+
+				for (int w = 0; w < TriAddCount; w++)
+					TriangleList.push_back(clippedTri[w]);
+			}
+			newTriCount = TriangleList.size();
+		}
+		for (auto& Tri : TriangleList)
+		{
+			DrawTriangle2filled(Tri, Tri.color);
+		}
 	}
 	//==========================================================================================================================
 };

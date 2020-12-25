@@ -58,7 +58,7 @@ public:
 	struct triangle
 	{
 		vec3D vectors[3];
-		Color color = {1};
+		Color color = {1.0f, 1.0f, 0.0f, 1.0f};
 	};
 
 	struct mesh
@@ -87,7 +87,7 @@ public:
 
 	Camera camera;
 
-	vec3D UpVec = { 0.0f, 1.0f, 0.0f };
+	vec3D UpVec = { 0.0f, -1.0f, 0.0f };
 
 public:
 	//Calculation functions
@@ -117,6 +117,8 @@ public:
 	vec3D CrossProd(vec3D& vec1, vec3D& vec2);
 
 	vec3D PlaneIntersect(vec3D& PlanePoint, vec3D& PlaneNormal, vec3D& StartOfLine, vec3D& EndOfLine);
+
+	uint16_t TrianglePlaneClip(vec3D PlanePoint, vec3D PlaneNormal, triangle& InputTriangle, triangle& OutputTriangle1, triangle& OutputTriangle2);
 	//==========================================================================================================================
 
 	//Draw functions

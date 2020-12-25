@@ -71,7 +71,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 	Graphics::mesh CubeMesh;
 	Graphics::mesh TestMesh;
 
-	TestMesh.LoadFromObj("teapot.obj");
+	TestMesh.LoadFromObj("axis.obj");
 
 	CubeMesh.tri = {
 
@@ -151,7 +151,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 
 			Graphics::Color color;
 
-			graphics->ClearScreen(1.0f, 0.0f, 0.0f);
+			graphics->ClearScreen(0.0f, 0.0f, 0.0f);
 
 			graphics->DrawMesh(TestMesh, color);
 
