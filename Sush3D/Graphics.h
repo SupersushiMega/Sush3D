@@ -47,6 +47,12 @@ public:
 		float a = 1.0f;
 	};
 
+	struct vec2D
+	{
+		float u = 0.0f;
+		float v = 0.0f;
+	};
+
 	struct vec3D
 	{
 		float x = 0.0f;
@@ -58,6 +64,7 @@ public:
 	struct triangle
 	{
 		vec3D vectors[3];
+		vec2D texCoord[3];
 		Color color = {1.0f, 1.0f, 0.0f, 1.0f};
 	};
 
@@ -116,7 +123,7 @@ public:
 	vec3D Normalise(vec3D& vec);
 	vec3D CrossProd(vec3D& vec1, vec3D& vec2);
 
-	vec3D PlaneIntersect(vec3D& PlanePoint, vec3D& PlaneNormal, vec3D& StartOfLine, vec3D& EndOfLine);
+	vec3D PlaneIntersect(vec3D& PlanePoint, vec3D& PlaneNormal, vec3D& StartOfLine, vec3D& EndOfLine, float& t);
 
 	uint16_t TrianglePlaneClip(vec3D PlanePoint, vec3D PlaneNormal, triangle& InputTriangle, triangle& OutputTriangle1, triangle& OutputTriangle2);
 	//==========================================================================================================================
@@ -148,5 +155,7 @@ public:
 	//Other functions
 	//==========================================================================================================================
 	bool Init(HWND windowHandle, float FOV, float DistancefromScreen, float ViewingDistance);
+
+	bool LoadBitmap(const char *filename);
 	//==========================================================================================================================
 };

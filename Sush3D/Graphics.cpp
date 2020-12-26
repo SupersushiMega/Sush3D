@@ -79,6 +79,23 @@ bool Graphics::Init(HWND windowHandle, float FOV, float DistancefromScreen, floa
 
 	Graphics::ProjMatrix = MakeProjectionMatrix(90.0f, (float)Graphics::Resolution[0] / (float)Graphics::Resolution[1], 0.1f, 1000.0f);
 
+	printf("test");
+
+	return true;
+}
+
+bool Graphics::LoadBitmap(const char *filename)
+{
+	BITMAPFILEHEADER fileHeader;
+	BITMAPINFOHEADER infoHeader;
+	FILE *bitmap;
+	
+	unsigned char* pointer;
+
+	fopen_s(&bitmap, filename, "r");
+
+	fread(&fileHeader, sizeof(fileHeader), 1, bitmap);	//get fileheader data
+	fread(&infoHeader, sizeof(infoHeader), 1, bitmap);	//get infoheader data
 	return true;
 }
 
@@ -327,13 +344,13 @@ Graphics::vec3D Graphics::CrossProd(vec3D& vec1, vec3D& vec2)
 	return vec;
 }
 
-Graphics::vec3D Graphics::PlaneIntersect(vec3D& PlanePoint, vec3D& PlaneNormal, vec3D& StartOfLine, vec3D& EndOfLine)
+Graphics::vec3D Graphics::PlaneIntersect(vec3D& PlanePoint, vec3D& PlaneNormal, vec3D& StartOfLine, vec3D& EndOfLine, float& t)
 {
 	PlaneNormal = Normalise(PlaneNormal);
 	float PlaneDotProd = -DotProduct(PlaneNormal, PlanePoint);
 	float ad = DotProduct(StartOfLine, PlaneNormal);
 	float bd = DotProduct(EndOfLine, PlaneNormal);
-	float t = (-PlaneDotProd - ad) / (bd - ad);
+	t = (-PlaneDotProd - ad) / (bd - ad);
 	vec3D StartOfLinetoEnd = SubVectors(EndOfLine, StartOfLine);
 	vec3D IntersectToLine = MultVectorFloat(StartOfLinetoEnd, t);
 	return AddVectors(StartOfLine, IntersectToLine);
@@ -355,6 +372,12 @@ uint16_t Graphics::TrianglePlaneClip(vec3D PlanePoint, vec3D PlaneNormal, triang
 	vec3D* OutPoints[3];
 	uint8_t OutPointCount = 0;
 
+	vec2D* InTexPoints[3];
+	uint8_t InTexPointCount = 0;
+
+	vec2D* OutTexPoints[3];
+	uint8_t OutTexPointCount = 0;
+
 	float dist0 = distance(InputTriangle.vectors[0]);
 	float dist1 = distance(InputTriangle.vectors[1]);
 	float dist2 = distance(InputTriangle.vectors[2]);
@@ -362,55 +385,72 @@ uint16_t Graphics::TrianglePlaneClip(vec3D PlanePoint, vec3D PlaneNormal, triang
 	if (dist0 >= 0)
 	{
 		InPoints[InPointCount++] = &InputTriangle.vectors[0];
+		InTexPoints[InTexPointCount++] = &InputTriangle.texCoord[0];
 	}
 	else
 	{
 		OutPoints[OutPointCount++] = &InputTriangle.vectors[0];
+		OutTexPoints[OutTexPointCount++] = &InputTriangle.texCoord[0];
 	}
 	
 	if (dist1 >= 0)
 	{
 		InPoints[InPointCount++] = &InputTriangle.vectors[1];
+		InTexPoints[InTexPointCount++] = &InputTriangle.texCoord[1];
 	}
 	else
 	{
 		OutPoints[OutPointCount++] = &InputTriangle.vectors[1];
+		OutTexPoints[OutTexPointCount++] = &InputTriangle.texCoord[1];
 	}
 	
 	if (dist2 >= 0)
 	{
 		InPoints[InPointCount++] = &InputTriangle.vectors[2];
+		InTexPoints[InTexPointCount++] = &InputTriangle.texCoord[2];
 	}
 	else
 	{
 		OutPoints[OutPointCount++] = &InputTriangle.vectors[2];
+		OutTexPoints[OutTexPointCount++] = &InputTriangle.texCoord[2];
 	}
+
+	float t;
 
 	if (InPointCount == 0)
 	{
 		return 0;
 	}
 
-	if (InPointCount == 3)
+	else if (InPointCount == 3)
 	{
 		OutputTriangle1 = InputTriangle;
 		return 1;
 	}
 
-	if (InPointCount == 1 && OutPointCount == 2)
+	else if (InPointCount == 1 && OutPointCount == 2)
 	{
 		//OutputTriangle1.color = InputTriangle.color;
 		OutputTriangle1.color = { 0.0f, 0.0f, 1.0f };
 
 		OutputTriangle1.vectors[0] = *InPoints[0];
+		OutputTriangle1.texCoord[0] = *InTexPoints[0];
 
-		OutputTriangle1.vectors[1] = PlaneIntersect(PlanePoint, PlaneNormal, *InPoints[0], *OutPoints[0]);
-		OutputTriangle1.vectors[2] = PlaneIntersect(PlanePoint, PlaneNormal, *InPoints[0], *OutPoints[1]);
+		OutputTriangle1.vectors[1] = PlaneIntersect(PlanePoint, PlaneNormal, *InPoints[0], *OutPoints[0], t);
+
+		OutputTriangle1.texCoord[1].u = t * (OutTexPoints[0]->u - InTexPoints[0]->u) + InTexPoints[0]->u;
+		OutputTriangle1.texCoord[1].v = t * (OutTexPoints[0]->v - InTexPoints[0]->v) + InTexPoints[0]->v;
+		//OutputTriangle1.texCoord[1].w = t * (outside_tex[0]->w - inside_tex[0]->w) + inside_tex[0]->w;
+
+		OutputTriangle1.vectors[2] = PlaneIntersect(PlanePoint, PlaneNormal, *InPoints[0], *OutPoints[1], t);
+		OutputTriangle1.texCoord[2].u = t * (OutTexPoints[1]->u - InTexPoints[0]->u) + InTexPoints[0]->u;
+		OutputTriangle1.texCoord[2].v = t * (OutTexPoints[1]->v - InTexPoints[0]->v) + InTexPoints[0]->v;
+		//out_tri1.t[2].w = t * (outside_tex[1]->w - inside_tex[0]->w) + inside_tex[0]->w;
 
 		return 1;
 	}
 
-	if (InPointCount == 2 && OutPointCount == 1)
+	else if (InPointCount == 2 && OutPointCount == 1)
 	{
 		//OutputTriangle1.color = InputTriangle.color;
 		//OutputTriangle2.color = InputTriangle.color;
@@ -425,12 +465,21 @@ uint16_t Graphics::TrianglePlaneClip(vec3D PlanePoint, vec3D PlaneNormal, triang
 
 		OutputTriangle1.vectors[0] = *InPoints[0];
 		OutputTriangle1.vectors[1] = *InPoints[1];
-		OutputTriangle1.vectors[2] = PlaneIntersect(PlanePoint, PlaneNormal, *InPoints[0], *OutPoints[0]);
+		OutputTriangle1.texCoord[0] = *InTexPoints[0];
+		OutputTriangle1.texCoord[1] = *InTexPoints[1];
+		OutputTriangle1.vectors[2] = PlaneIntersect(PlanePoint, PlaneNormal, *InPoints[0], *OutPoints[0], t);
+		OutputTriangle1.texCoord[2].u = t * (OutTexPoints[0]->u - InTexPoints[0]->u) + InTexPoints[0]->u;
+		OutputTriangle1.texCoord[2].v = t * (OutTexPoints[0]->v - InTexPoints[0]->v) + InTexPoints[0]->v;
 		
 		
 		OutputTriangle2.vectors[0] = *InPoints[1];
+		OutputTriangle2.texCoord[0] = *InTexPoints[1];
 		OutputTriangle2.vectors[1] = OutputTriangle1.vectors[2];
-		OutputTriangle2.vectors[2] = PlaneIntersect(PlanePoint, PlaneNormal, *InPoints[1], *OutPoints[0]);
+		OutputTriangle2.texCoord[1] = OutputTriangle1.texCoord[2];
+
+		OutputTriangle2.vectors[2] = PlaneIntersect(PlanePoint, PlaneNormal, *InPoints[1], *OutPoints[0], t);
+		OutputTriangle2.texCoord[2].u = t * (OutTexPoints[0]->u - InTexPoints[1]->u) + InTexPoints[1]->u;
+		OutputTriangle2.texCoord[2].v = t * (OutTexPoints[0]->v - InTexPoints[1]->v) + InTexPoints[1]->v;
 		
 		return 2;
 	}
@@ -642,6 +691,10 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 		TransformedTri.vectors[1] = MatrixVectorMultiplication(tri.vectors[1], WorldMatrix);
 		TransformedTri.vectors[2] = MatrixVectorMultiplication(tri.vectors[2], WorldMatrix);
 
+		TransformedTri.texCoord[0] = tri.texCoord[0];
+		TransformedTri.texCoord[1] = tri.texCoord[1];
+		TransformedTri.texCoord[2] = tri.texCoord[2];
+
 		//Normal Calculation
 		//==========================================================================================================================
 		line1 = SubVectors(TransformedTri.vectors[1], TransformedTri.vectors[0]);
@@ -658,9 +711,14 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 		{
 			//World to viewspace
 			//==========================================================================================================================
-			ViewedTri.vectors[0] = MatrixVectorMultiplication(TransformedTri.vectors[0], ViewMatrix);
 			ViewedTri.vectors[1] = MatrixVectorMultiplication(TransformedTri.vectors[1], ViewMatrix);
+			ViewedTri.vectors[0] = MatrixVectorMultiplication(TransformedTri.vectors[0], ViewMatrix);
 			ViewedTri.vectors[2] = MatrixVectorMultiplication(TransformedTri.vectors[2], ViewMatrix);
+
+			ViewedTri.texCoord[0] = TransformedTri.texCoord[0];
+			ViewedTri.texCoord[1] = TransformedTri.texCoord[1];
+			ViewedTri.texCoord[2] = TransformedTri.texCoord[2];
+
 			//==========================================================================================================================
 
 			//Clipping
@@ -668,7 +726,7 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 			uint8_t ClippedTriCount = 0;
 			triangle ClippedTri[2];
 
-			ClippedTriCount = TrianglePlaneClip({ 0.0f, 0.0f, 2.1f }, { 0.0f, 0.0f, 1.0f }, ViewedTri, ClippedTri[0], ClippedTri[1]);
+			ClippedTriCount = TrianglePlaneClip({ 0.0f, 0.0f, 0.1f }, { 0.0f, 0.0f, 1.0f }, ViewedTri, ClippedTri[0], ClippedTri[1]);
 			//==========================================================================================================================
 
 			for (uint8_t n = 0; n < ClippedTriCount; n++)
@@ -690,6 +748,10 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 				ProjectedTri.vectors[0] = MatrixVectorMultiplication(ClippedTri[n].vectors[0], Graphics::ProjMatrix);
 				ProjectedTri.vectors[1] = MatrixVectorMultiplication(ClippedTri[n].vectors[1], Graphics::ProjMatrix);
 				ProjectedTri.vectors[2] = MatrixVectorMultiplication(ClippedTri[n].vectors[2], Graphics::ProjMatrix);
+
+				ProjectedTri.texCoord[0] = ClippedTri[n].texCoord[0];
+				ProjectedTri.texCoord[1] = ClippedTri[n].texCoord[1];
+				ProjectedTri.texCoord[2] = ClippedTri[n].texCoord[2];
 				//==========================================================================================================================
 
 				ProjectedTri.vectors[0] = DivVector(ProjectedTri.vectors[0], ProjectedTri.vectors[0].w);
@@ -734,7 +796,7 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 		list<triangle> TriangleList;
 		TriangleList.push_back(TriToRast);
 		uint8_t newTriCount = 1;
-		uint32_t TriAddCount = 0;
+		uint8_t TriAddCount = 0;
 
 		for (uint8_t Case = 0; Case < 4; Case++)
 		{
@@ -768,7 +830,7 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 					}
 				}
 
-				for (int w = 0; w < TriAddCount; w++)
+				for (uint8_t w = 0; w < TriAddCount; w++)
 					TriangleList.push_back(clippedTri[w]);
 			}
 			newTriCount = TriangleList.size();
