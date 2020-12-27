@@ -102,7 +102,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 	};
 
 	Graphics::BitMap bitmap;
-	bitmap.LoadBitmap("CubeTest2.bmp");
+	bitmap.LoadBitmap("CubeTest.bmp");
 
 	while (message.message != WM_QUIT)
 	{

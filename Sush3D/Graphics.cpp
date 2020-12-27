@@ -125,19 +125,25 @@ bool Graphics::BitMap::LoadBitmap(const char *filename)
 	uint16_t sizeRGB = sizeof(TempRGB);
 
 	Color tempCol;
-	vector<Color> TempVec;
+	vector<Color> TempVecX;
+	vector<vector<Color>> TempVecY;
 
 	for (uint16_t Y = 0; Y < infoHeader.biHeight; Y++)
 	{
-		TempVec.clear();
+		TempVecX.clear();
 		for (uint16_t X = 0; X < infoHeader.biWidth; X++)
 		{
 			char buffer[500];
 			fread(&tempRGB, sizeRGB, 1, bitmap);
 			tempCol = { (float)tempRGB.r / 255.0f, (float)tempRGB.g / 255.0f, (float)tempRGB.b / 255.0f, 1.0f };
-			TempVec.push_back(tempCol);
+			TempVecX.push_back(tempCol);
 		}
-		Pixels.push_back(TempVec);
+		TempVecY.push_back(TempVecX);
+	}
+
+	for (uint16_t Y = infoHeader.biHeight; Y > 0; Y--)
+	{
+		Pixels.push_back(TempVecY[Y - 1]);	//Invert Y of Image to make it upright
 	}
 
 	fclose(bitmap);
