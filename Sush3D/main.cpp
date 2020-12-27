@@ -24,7 +24,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int nCmdShow)
 {
 
-	RECT resolution = { 0, 0, 800, 600 };
+	RECT resolution = { 0, 0, 1024, 1024 };
 
 	//Window Setup
 	//=========================================================================================
@@ -101,6 +101,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 
 	};
 
+	Graphics::BitMap bitmap;
+	bitmap.LoadBitmap("CubeTest2.bmp");
 
 	while (message.message != WM_QUIT)
 	{
@@ -154,7 +156,15 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 
 			graphics->ClearScreen(0.0f, 0.0f, 0.0f);
 
-			graphics->DrawMesh(CubeMesh, color);
+			//graphics->DrawMesh(CubeMesh, color);
+
+			for (float Y = 0; Y < bitmap.Resolution[0]; Y++)
+			{
+				for (float X = 0; X < bitmap.Resolution[1]; X++)
+				{
+					graphics->DrawPixel(X, Y, bitmap.Pixels[Y][X]);
+				}
+			}
 
 			graphics->EndDraw();
 		}

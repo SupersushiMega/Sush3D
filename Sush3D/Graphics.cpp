@@ -84,7 +84,7 @@ bool Graphics::Init(HWND windowHandle, float FOV, float DistancefromScreen, floa
 	return true;
 }
 
-bool Graphics::LoadBitmap(const char *filename)
+bool Graphics::BitMap::LoadBitmap(const char *filename)
 {
 	BITMAPFILEHEADER fileHeader;
 	BITMAPINFOHEADER infoHeader;
@@ -92,10 +92,56 @@ bool Graphics::LoadBitmap(const char *filename)
 	
 	unsigned char* pointer;
 
+	struct TempRGB
+	{
+		uint8_t b = 0;
+		uint8_t g = 0;
+		uint8_t r = 0;
+	};
+
+	TempRGB tempRGB;
+
+	unsigned char *PixPoint;
+
 	fopen_s(&bitmap, filename, "r");
+
+	if (bitmap == 0)
+	{
+		return false;
+	}
 
 	fread(&fileHeader, sizeof(fileHeader), 1, bitmap);	//get fileheader data
 	fread(&infoHeader, sizeof(infoHeader), 1, bitmap);	//get infoheader data
+
+	Resolution[0] = infoHeader.biWidth;
+	Resolution[1] = infoHeader.biHeight;
+
+	uint64_t size = infoHeader.biWidth * infoHeader.biHeight;
+
+	PixPoint = new unsigned char[size * 3];
+
+	fseek(bitmap, fileHeader.bfOffBits, 0);
+
+	uint16_t sizeRGB = sizeof(TempRGB);
+
+	Color tempCol;
+	vector<Color> TempVec;
+
+	for (uint16_t Y = 0; Y < infoHeader.biHeight; Y++)
+	{
+		TempVec.clear();
+		for (uint16_t X = 0; X < infoHeader.biWidth; X++)
+		{
+			char buffer[500];
+			fread(&tempRGB, sizeRGB, 1, bitmap);
+			tempCol = { (float)tempRGB.r / 255.0f, (float)tempRGB.g / 255.0f, (float)tempRGB.b / 255.0f, 1.0f };
+			TempVec.push_back(tempCol);
+		}
+		Pixels.push_back(TempVec);
+	}
+
+	fclose(bitmap);
+	//while (1);
 	return true;
 }
 
@@ -490,6 +536,11 @@ void Graphics::ClearScreen(float r, float g, float b)
 	rendertarget->Clear(D2D1::ColorF(r, g, b));
 };
 
+void Graphics::DrawPixel(float &x, float &y, Color &col)
+{
+	Solidbrush->SetColor(D2D1::ColorF(col.r, col.g, col.b, col.a));
+	rendertarget->DrawLine(D2D1::Point2F(x, y), D2D1::Point2F(x+1, y+1), Solidbrush);
+}
 
 void Graphics::DrawFlatTop(vec3D& point0, vec3D& point1, vec3D& point2)
 {

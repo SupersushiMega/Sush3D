@@ -3,6 +3,8 @@
 /*Sush3D
 
 Made by SupersushiMega with help of javidx9 code-It-Yourself 3D Graphics Engine youtube series
+
+Textures must be in a 24Bit Bitmap format (Bitmaps of textures made with blenders material editor must have the principled shader node before matrial output node)
 */
 
 #include <Windows.h>
@@ -90,6 +92,14 @@ public:
 		vec3D TargetRot = { 0.0f, 0.0f, 1.0f };
 	};
 
+	struct BitMap
+	{
+		uint32_t Resolution[2];
+		vector<vector<Color>> Pixels;
+
+		bool LoadBitmap(const char* filename);
+	};
+
 	GlobalLight globalLight;
 
 	Camera camera;
@@ -146,6 +156,7 @@ public:
 	}
 
 	void ClearScreen(float r, float g, float b);
+	void DrawPixel(float &x, float &y, Color &col);
 	void DrawTriangle(float& x1, float& y1, float& x2, float& y2, float& x3, float& y3, float& r, float& g, float& b, float& a);
 	void DrawTriangle2(triangle Triangle, Color color);
 	void DrawTriangle2filled(triangle &Triangle, Color &color);
@@ -155,7 +166,5 @@ public:
 	//Other functions
 	//==========================================================================================================================
 	bool Init(HWND windowHandle, float FOV, float DistancefromScreen, float ViewingDistance);
-
-	bool LoadBitmap(const char *filename);
 	//==========================================================================================================================
 };
