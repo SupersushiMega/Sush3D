@@ -163,7 +163,7 @@ Graphics::ImageBuff::~ImageBuff()
 	PixelsPtr = nullptr;
 }
 
-void Graphics::ImageBuff::PutPix(uint16_t x, uint16_t y, Color col)
+void Graphics::ImageBuff::PutPix(uint16_t& x, uint16_t& y, Color& col)
 {
 	//Convert Color
 	//==========================================================================================================================
@@ -561,18 +561,70 @@ uint16_t Graphics::TrianglePlaneClip(vec3D PlanePoint, vec3D PlaneNormal, triang
 	}
 }
 
-void Graphics::ClearScreen(float r, float g, float b)
+void Graphics::ClearScreen(float r, float g, float b, ImageBuff& Buffer)
 {
 	rendertarget->Clear(D2D1::ColorF(r, g, b));
 };
 
-void Graphics::DrawPixel(float &x, float &y, Color &col)
+void Graphics::DrawPixel(uint16_t &x, uint16_t&y, Color &col, ImageBuff& Buffer)
 {
-	Solidbrush->SetColor(D2D1::ColorF(col.r, col.g, col.b, col.a));
-	rendertarget->DrawLine(D2D1::Point2F(x, y), D2D1::Point2F(x+1, y+1), Solidbrush);
+	Buffer.PutPix(x, y, col);
 }
 
-void Graphics::DrawFlatTop(vec3D& point0, vec3D& point1, vec3D& point2)
+void Graphics::DrawLine(Point& p1, Point& p2, Color& col, ImageBuff& Buffer)
+{
+	float Xmod = 0.0f;
+	float Ymod = 0.0f;
+
+	float CurX = 0.0f;
+	uint16_t CurY = 0.0f;
+
+	float endX = 0;
+	uint16_t endY = 0;
+
+	if (p1.y < p2.y)
+	{
+		endY = p2.y;
+		CurY = p1.y;
+		CurX = p1.x;
+	}
+	else
+	{
+		endY = p1.y;
+		CurY = p2.y;
+		CurX = p2.x;
+	}
+
+	int32_t DeltaX = p1.x - p2.x;
+	uint16_t DeltaY = abs(p1.y - p2.y);
+
+	uint16_t CurXu = 0;
+
+	if (DeltaY != 0)
+	{
+		Xmod = (float)DeltaX / (float)DeltaY;
+		do
+		{
+			CurY++;
+			endX = CurX + Xmod;
+			do
+			{
+				CurXu = CurX;
+				Buffer.PutPix(CurXu, CurY, col);
+				CurX += Xmod;
+			} while (CurX != endX && CurX >= 0);
+		} while (CurY < endY && CurY >= 0);
+	}
+	else
+	{
+		for (CurXu = CurX; CurXu != (CurX + DeltaX); CurXu += (abs(DeltaX) / DeltaX))
+		{
+			Buffer.PutPix(CurXu, CurY, col);
+		}
+	}
+}
+
+void Graphics::DrawFlatTop(vec3D& point0, vec3D& point1, vec3D& point2, ImageBuff& Buffer)
 {
 	//Calculate Slopes
 	//==========================================================================================================================
@@ -608,7 +660,7 @@ void Graphics::DrawFlatTop(vec3D& point0, vec3D& point1, vec3D& point2)
 	}
 };
 
-void Graphics::DrawFlatBottom(vec3D& point0, vec3D& point1, vec3D& point2)
+void Graphics::DrawFlatBottom(vec3D& point0, vec3D& point1, vec3D& point2, ImageBuff& Buffer)
 {
 	const float slope0 = (point1.x - point0.x) / (point1.y - point0.y);
 	const float slope1 = (point2.x - point0.x) / (point2.y - point0.y);
@@ -635,7 +687,7 @@ void Graphics::DrawFlatBottom(vec3D& point0, vec3D& point1, vec3D& point2)
 };
 
 
-void Graphics::DrawTriangle(float& x1, float& y1, float& x2, float& y2, float& x3, float& y3, float& r, float& g, float& b, float& a)
+void Graphics::DrawTriangle(uint16_t& x1, uint16_t& y1, uint16_t& x2, uint16_t& y2, uint16_t& x3, uint16_t& y3, uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& a, ImageBuff& Buffer)
 {
 	Solidbrush->SetColor(D2D1::ColorF(r, g, b, a));
 	rendertarget->DrawLine(D2D1::Point2F(x1, y1), D2D1::Point2F(x2, y2), Solidbrush);
@@ -644,17 +696,18 @@ void Graphics::DrawTriangle(float& x1, float& y1, float& x2, float& y2, float& x
 };
 
 
-void Graphics::DrawTriangle2(triangle Triangle, Color color)
+void Graphics::DrawTriangle2(triangle Triangle, Color color, ImageBuff& Buffer)
 {
-	Solidbrush->SetColor(D2D1::ColorF(color.r, color.g, color.b, color.a));
 	for (char i = 0; i < 3; i++)
 	{
-		rendertarget->DrawLine(D2D1::Point2F(Triangle.vectors[i].x, Triangle.vectors[i].y), D2D1::Point2F(Triangle.vectors[(i + 1) % 3].x, Triangle.vectors[(i + 1) % 3].y), Solidbrush);
+		Point p1 = { Triangle.vectors[i].x, Triangle.vectors[i].y };
+		Point p2 = { Triangle.vectors[(i + 1) % 3].x, Triangle.vectors[(i + 1) % 3].y };
+		DrawLine(p1, p2, color, Buffer);
 	}
 };
 
 
-void Graphics::DrawTriangle2filled(triangle &Triangle, Color &color)
+void Graphics::DrawTriangle2filled(triangle &Triangle, Color &color, ImageBuff& Buffer)
 {
 	Solidbrush->SetColor(D2D1::ColorF(color.r, color.g, color.b, color.a));
 
@@ -686,7 +739,7 @@ void Graphics::DrawTriangle2filled(triangle &Triangle, Color &color)
 		{
 			std::swap(vec0, vec1);
 		}
-		DrawFlatTop(*vec0, *vec1, *vec2);
+		DrawFlatTop(*vec0, *vec1, *vec2, Buffer);
 	}
 
 	else if (vec1->y == vec2->y)	//flatbottom
@@ -695,7 +748,7 @@ void Graphics::DrawTriangle2filled(triangle &Triangle, Color &color)
 		{
 			std::swap(vec1, vec2);
 		}
-		DrawFlatBottom(*vec0, *vec1, *vec2);
+		DrawFlatBottom(*vec0, *vec1, *vec2, Buffer);
 	}
 
 	else //neither
@@ -709,14 +762,14 @@ void Graphics::DrawTriangle2filled(triangle &Triangle, Color &color)
 
 		if (vec1->x < vecSplt.x)	//check if triangle is major right
 		{
-			DrawFlatBottom(*vec0, *vec1, vecSplt);
-			DrawFlatTop(*vec1, vecSplt, *vec2);
+			DrawFlatBottom(*vec0, *vec1, vecSplt, Buffer);
+			DrawFlatTop(*vec1, vecSplt, *vec2, Buffer);
 		}
 
 		else	//triangle is major left
 		{
-			DrawFlatBottom(*vec0, vecSplt, *vec1);
-			DrawFlatTop(vecSplt, *vec1, *vec2);
+			DrawFlatBottom(*vec0, vecSplt, *vec1, Buffer);
+			DrawFlatTop(vecSplt, *vec1, *vec2, Buffer);
 		}
 
 	}
@@ -725,7 +778,7 @@ void Graphics::DrawTriangle2filled(triangle &Triangle, Color &color)
 };
 
 
-void Graphics::DrawMesh(mesh mesh, Color color)
+void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& Buffer)
 {
 	triangle TransformedTri;
 	triangle ViewedTri;
@@ -858,7 +911,6 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 				//==========================================================================================================================
 
 				TriangleToRasterVector.push_back(ProjectedTri);
-
 				//DrawTriangle2filled(ProjectedTri, color);
 			}
 		}
@@ -918,7 +970,9 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 		}
 		for (auto& Tri : TriangleList)
 		{
-			DrawTriangle2filled(Tri, Tri.color);
+			Color col = { 0,0,0,0 };
+			DrawTriangle2(Tri, col, Buffer);
+			DrawTriangle2filled(Tri, Tri.color, Buffer);
 		}
 	}
 	//==========================================================================================================================

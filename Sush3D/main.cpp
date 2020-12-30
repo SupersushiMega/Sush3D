@@ -105,7 +105,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 
 	Graphics::BitMap bitmap;
 	bitmap.LoadBitmap("Balls.bmp");
-
+	uint8_t frame = 0;
 	while (message.message != WM_QUIT)
 	{
 		if (PeekMessage(&message, windowhandle, 0, 0, PM_REMOVE))
@@ -152,18 +152,29 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 			}
 
 			//render
-			Graphics::Color color;
+			Graphics::Color color = { 0.0f, 0.0f, 0.0f, 0.0f };
 
-			//graphics->DrawMesh(CubeMesh, color);
-
-			for (float Y = 0; Y < bitmap.Resolution[0]; Y++)
+			Graphics::Point p1 = { rand() % 1024, rand() % 1024 };
+			Graphics::Point p2 = { rand() % 1024, rand() % 1024 };
+			if (frame == 0)
 			{
-				for (float X = 0; X < bitmap.Resolution[1]; X++)
+				for (uint16_t Y = 0; Y < bitmap.Resolution[0]; Y++)
 				{
-					imageBuffer.PutPix(X, Y, bitmap.Pixels[Y][X]);
+					for (uint16_t X = 0; X < bitmap.Resolution[1]; X++)
+					{
+						imageBuffer.PutPix(X, Y, bitmap.Pixels[Y][X]);
+					}
 				}
 			}
-			graphics->refresh(imageBuffer);
+			graphics->BeginDraw();
+			graphics->DrawMesh(CubeMesh, color, imageBuffer);
+			graphics->EndDraw();
+			//graphics->DrawLine(p1, p2, color, imageBuffer);
+			if (frame == 0)
+			{
+				graphics->refresh(imageBuffer);
+			}
+			frame++;
 		}
 	}
 

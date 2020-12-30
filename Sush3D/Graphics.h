@@ -55,11 +55,17 @@ public:
 		public:
 			ImageBuff(uint16_t Width, uint16_t Height);
 			~ImageBuff();
-			void PutPix(uint16_t x, uint16_t y, Color col);
+			void PutPix(uint16_t &x, uint16_t &y, Color &col);
 
 			uint32_t* PixelsPtr = nullptr;
 			uint16_t width = 0;
 			uint16_t height = 0;
+	};
+
+	struct Point
+	{
+		uint16_t x = 0;
+		uint16_t y = 0;
 	};
 
 	struct vec2D
@@ -154,8 +160,8 @@ public:
 	//Draw functions
 	//==========================================================================================================================
 private:
-	void DrawFlatTop(vec3D& point0, vec3D& point1, vec3D& point2);	//draw triangle with flattop
-	void DrawFlatBottom(vec3D& point0, vec3D& point1, vec3D& point2);	//draw triangle with flatbottom
+	void DrawFlatTop(vec3D& point0, vec3D& point1, vec3D& point2, ImageBuff& Buffer);	//draw triangle with flattop
+	void DrawFlatBottom(vec3D& point0, vec3D& point1, vec3D& point2, ImageBuff& Buffer);	//draw triangle with flatbottom
 
 public:
 	void BeginDraw()
@@ -168,12 +174,13 @@ public:
 		rendertarget->EndDraw();
 	}
 
-	void ClearScreen(float r, float g, float b);
-	void DrawPixel(float &x, float &y, Color &col);
-	void DrawTriangle(float& x1, float& y1, float& x2, float& y2, float& x3, float& y3, float& r, float& g, float& b, float& a);
-	void DrawTriangle2(triangle Triangle, Color color);
-	void DrawTriangle2filled(triangle &Triangle, Color &color);
-	void DrawMesh(mesh mesh, Color color);
+	void ClearScreen(float r, float g, float b, ImageBuff& Buffer);
+	void DrawPixel(uint16_t&x, uint16_t&y, Color &col, ImageBuff& Buffer);
+	void DrawLine(Point& p1, Point& p2, Color& col, ImageBuff& Buffer);
+	void DrawTriangle(uint16_t& x1, uint16_t& y1, uint16_t& x2, uint16_t& y2, uint16_t& x3, uint16_t& y3, uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& a, ImageBuff& Buffer);
+	void DrawTriangle2(triangle Triangle, Color color, ImageBuff& Buffer);
+	void DrawTriangle2filled(triangle &Triangle, Color &color, ImageBuff& Buffer);
+	void DrawMesh(mesh mesh, Color color, ImageBuff& Buffer);
 
 	void refresh(ImageBuff& Buffer);
 	//==========================================================================================================================
