@@ -26,6 +26,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 
 	RECT resolution = { 0, 0, 1024, 1024 };
 
+	Graphics::ImageBuff imageBuffer = Graphics::ImageBuff(resolution.right, resolution.bottom);
+
 	//Window Setup
 	//=========================================================================================
 	WNDCLASSEX windowclass;
@@ -53,7 +55,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 
 	graphics = new Graphics();
 
-	if (!graphics->Init(windowhandle, 90.0f, 0.1f, 1000.0f))
+	if (!graphics->Init(windowhandle, resolution.right, resolution.bottom, 90.0f, 0.1f, 1000.0f))
 	{
 		delete graphics;
 		return -1;
@@ -102,7 +104,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 	};
 
 	Graphics::BitMap bitmap;
-	bitmap.LoadBitmap("CubeTest.bmp");
+	bitmap.LoadBitmap("Balls.bmp");
 
 	while (message.message != WM_QUIT)
 	{
@@ -150,11 +152,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 			}
 
 			//render
-			graphics->BeginDraw();
-
 			Graphics::Color color;
-
-			graphics->ClearScreen(0.0f, 0.0f, 0.0f);
 
 			//graphics->DrawMesh(CubeMesh, color);
 
@@ -162,11 +160,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 			{
 				for (float X = 0; X < bitmap.Resolution[1]; X++)
 				{
-					graphics->DrawPixel(X, Y, bitmap.Pixels[Y][X]);
+					imageBuffer.PutPix(X, Y, bitmap.Pixels[Y][X]);
 				}
 			}
-
-			graphics->EndDraw();
+			graphics->refresh(imageBuffer);
 		}
 	}
 

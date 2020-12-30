@@ -21,6 +21,7 @@ class Graphics
 	ID2D1Factory* factory;
 	ID2D1HwndRenderTarget* rendertarget;
 	ID2D1SolidColorBrush* Solidbrush;
+	ID2D1Bitmap* BufferBmp;
 
 public:
 
@@ -47,6 +48,18 @@ public:
 		float g = 1.0f;
 		float b = 1.0f;
 		float a = 1.0f;
+	};
+
+	class ImageBuff
+	{
+		public:
+			ImageBuff(uint16_t Width, uint16_t Height);
+			~ImageBuff();
+			void PutPix(uint16_t x, uint16_t y, Color col);
+
+			uint32_t* PixelsPtr = nullptr;
+			uint16_t width = 0;
+			uint16_t height = 0;
 	};
 
 	struct vec2D
@@ -161,10 +174,12 @@ public:
 	void DrawTriangle2(triangle Triangle, Color color);
 	void DrawTriangle2filled(triangle &Triangle, Color &color);
 	void DrawMesh(mesh mesh, Color color);
+
+	void refresh(ImageBuff& Buffer);
 	//==========================================================================================================================
 
 	//Other functions
 	//==========================================================================================================================
-	bool Init(HWND windowHandle, float FOV, float DistancefromScreen, float ViewingDistance);
+	bool Init(HWND windowHandle, uint16_t width, uint16_t height, float FOV, float DistancefromScreen, float ViewingDistance);
 	//==========================================================================================================================
 };

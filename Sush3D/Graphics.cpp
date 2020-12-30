@@ -18,6 +18,7 @@ Graphics::Graphics()
 	factory = NULL;
 	rendertarget = NULL;
 	Solidbrush = NULL;
+	BufferBmp = NULL;
 }
 
 
@@ -40,7 +41,7 @@ Graphics::~Graphics()
 }
 
 
-bool Graphics::Init(HWND windowHandle, float FOV, float DistancefromScreen, float ViewingDistance)
+bool Graphics::Init(HWND windowHandle, uint16_t width, uint16_t height, float FOV, float DistancefromScreen, float ViewingDistance)
 {
 	HRESULT res = D2D1CreateFactory(D2D1_FACTORY_TYPE_MULTI_THREADED, &factory);
 	if (res != S_OK)
@@ -79,8 +80,6 @@ bool Graphics::Init(HWND windowHandle, float FOV, float DistancefromScreen, floa
 
 	Graphics::ProjMatrix = MakeProjectionMatrix(90.0f, (float)Graphics::Resolution[0] / (float)Graphics::Resolution[1], 0.1f, 1000.0f);
 
-	printf("test");
-
 	return true;
 }
 
@@ -89,7 +88,7 @@ bool Graphics::BitMap::LoadBitmap(const char *filename)
 	BITMAPFILEHEADER fileHeader;
 	BITMAPINFOHEADER infoHeader;
 	FILE *bitmap;
-	
+
 	unsigned char* pointer;
 
 	struct TempRGB
@@ -149,6 +148,31 @@ bool Graphics::BitMap::LoadBitmap(const char *filename)
 	fclose(bitmap);
 	//while (1);
 	return true;
+}
+
+Graphics::ImageBuff::ImageBuff(uint16_t Width, uint16_t Height)
+{
+	width = Width;
+	height = Height;
+	PixelsPtr = new uint32_t[width * height];
+}
+
+Graphics::ImageBuff::~ImageBuff()
+{
+	delete[] PixelsPtr;
+	PixelsPtr = nullptr;
+}
+
+void Graphics::ImageBuff::PutPix(uint16_t x, uint16_t y, Color col)
+{
+	//Convert Color
+	//==========================================================================================================================
+	uint32_t buffer = 0;
+	buffer |= (uint32_t)(col.b * 255);
+	buffer |= ((uint32_t)(col.g * 255)<<8);
+	buffer |= ((uint32_t)(col.r * 255)<<16);
+	//==========================================================================================================================
+	PixelsPtr[(y * width) + x] = buffer;
 }
 
 bool Graphics::mesh::LoadFromObj(string filename)
@@ -899,3 +923,38 @@ void Graphics::DrawMesh(mesh mesh, Color color)
 	}
 	//==========================================================================================================================
 };
+
+void Graphics::refresh(ImageBuff& Buffer)
+{
+	BeginDraw();
+
+	//Create Bitmap
+	//==========================================================================================================================
+	D2D1_PIXEL_FORMAT PixForm = D2D1::PixelFormat();
+	PixForm.format = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+	PixForm.alphaMode = D2D1_ALPHA_MODE_IGNORE;
+
+	D2D1_BITMAP_PROPERTIES Properties = D2D1::BitmapProperties();
+	rendertarget->GetDpi(&Properties.dpiX, &Properties.dpiY);
+	Properties.pixelFormat = PixForm;
+
+	D2D1_RECT_F rect = D2D1::RectF(0.0f, 0.0f, Buffer.width, Buffer.height);
+	D2D1_SIZE_U size = D2D1::SizeU(Buffer.width, Buffer.height);
+	HRESULT hr = rendertarget->CreateBitmap(size, Buffer.PixelsPtr, Buffer.width * 4, Properties, &BufferBmp);
+	//==========================================================================================================================
+
+	//Copy Buffer to Bitmap
+	//==========================================================================================================================
+	D2D1_RECT_U CopyRect = D2D1::RectU(0, 0, Buffer.width, Buffer.height);
+
+	BufferBmp->CopyFromMemory(&CopyRect, Buffer.PixelsPtr, Buffer.width * 4);
+	//==========================================================================================================================
+
+	//Draw Bitmap
+	//==========================================================================================================================
+	rendertarget->DrawBitmap(BufferBmp, rect);
+	//==========================================================================================================================
+	BufferBmp->Release();
+
+	EndDraw();
+}
