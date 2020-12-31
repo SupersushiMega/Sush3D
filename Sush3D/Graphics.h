@@ -116,7 +116,7 @@ public:
 		uint32_t Resolution[2];
 		vector<vector<Color>> Pixels;
 
-		bool LoadBitmap(const char* filename);
+		bool LoadBitmap(const char* filename, bool invert = false);
 	};
 
 	GlobalLight globalLight;
@@ -163,8 +163,8 @@ private:
 	void DrawFlatTop(vec3D& point0, vec3D& point1, vec3D& point2, Color col, ImageBuff& Buffer);	//draw triangle with flattop
 	void DrawFlatBottom(vec3D& point0, vec3D& point1, vec3D& point2, Color col, ImageBuff& Buffer);	//draw triangle with flatbottom
 
-	void DrawFlatTopTextured(vec3D& point0, vec3D& point1, vec3D& point2, BitMap& texture, ImageBuff& Buffer);	//draw triangle with flattop
-	void DrawFlatBottomTextured(vec3D& point0, vec3D& point1, vec3D& point2, BitMap& texture, ImageBuff& Buffer);	//draw triangle with flatbottom
+	void DrawFlatTopTextured(vec3D& point0, vec3D& point1, vec3D& point2, vec2D& UVpoint0, vec2D& UVpoint1, vec2D& UVpoint2, BitMap& texture, ImageBuff& Buffer);	//draw triangle with flattop
+	void DrawFlatBottomTextured(vec3D& XYpoint0, vec3D& XYpoint1, vec3D& XYpoint2, vec2D& UVpoint0, vec2D& UVpoint1, vec2D& UVpoint2, BitMap& texture, ImageBuff& Buffer);	//draw triangle with flatbottom
 
 public:
 	void BeginDraw()
@@ -185,6 +185,7 @@ public:
 	void DrawTriangle2filled(triangle &Triangle, Color &color, ImageBuff& Buffer);
 	void DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageBuff& Buffer);
 	void DrawMesh(mesh mesh, Color color, ImageBuff& Buffer);
+	void DrawMeshTextured(mesh mesh, BitMap& texture, ImageBuff& Buffer);
 
 	void refresh(ImageBuff& Buffer);
 	//==========================================================================================================================

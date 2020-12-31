@@ -104,7 +104,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 	};
 
 	Graphics::BitMap bitmap;
-	bitmap.LoadBitmap("TestTexture_Cube.bmp");
+	bitmap.LoadBitmap("TestTexture_Cube.bmp", true);
 	uint8_t frame = 0;
 	while (message.message != WM_QUIT)
 	{
@@ -142,6 +142,19 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 				graphics->camera.LocalPosDelta.z = 0.0f;
 			}
 
+			if (GetAsyncKeyState(VK_UP))	//Left rotation
+			{
+				graphics->camera.LocalPosDelta.y = 0.1f;
+			}
+			else if (GetAsyncKeyState(VK_DOWN))	//Right rotation
+			{
+				graphics->camera.LocalPosDelta.y = -0.1f;
+			}
+			else
+			{
+				graphics->camera.LocalPosDelta.y = 0.0f;
+			}
+
 			if (GetAsyncKeyState(VK_LEFT))	//Left rotation
 			{
 				graphics->camera.TargetRot.y += 0.1f;
@@ -154,21 +167,20 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 			//render
 			Graphics::Color color = { 0.5f, 0.5f, 0.5f, 0.0f };
 
-			Graphics::Point p1 = { rand() % 1024, rand() % 1024 };
-			Graphics::Point p2 = { rand() % 1024, rand() % 1024 };
 			if (frame)
 			{
 				for (uint16_t Y = 0; Y < bitmap.Resolution[0]; Y++)
 				{
 					for (uint16_t X = 0; X < bitmap.Resolution[1]; X++)
 					{
-						imageBuffer.PutPix(X, Y, color);
+						imageBuffer.PutPix(X, Y, bitmap.Pixels[Y][X]);
 					}
 				}
 			}
 			//graphics->BeginDraw();
 			//graphics->ClearScreen(0, 0, 0, imageBuffer);
-			graphics->DrawMesh(TestMesh, color, imageBuffer);
+			//graphics->DrawMesh(TestMesh, color, imageBuffer);
+			graphics->DrawMeshTextured(TestMesh, bitmap, imageBuffer);
 			//graphics->EndDraw();
 			//graphics->DrawLine(p1, p2, color, imageBuffer);
 			if (frame)
