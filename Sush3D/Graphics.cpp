@@ -175,7 +175,7 @@ void Graphics::ImageBuff::PutPix(uint16_t& x, uint16_t& y, Color& col)
 	PixelsPtr[(y * width) + x] = buffer;
 }
 
-bool Graphics::mesh::LoadFromObj(string filename)
+bool Graphics::mesh::LoadFromObj(string filename, bool hasTexture)
 {
 	ifstream f(filename);
 	if (!f.is_open())
@@ -184,6 +184,7 @@ bool Graphics::mesh::LoadFromObj(string filename)
 	}
 
 	vector<vec3D> verts; //vertice pool
+	vector<vec2D> TexCoords; //Textur vertice pool
 
 	while (!f.eof())
 	{
@@ -197,16 +198,52 @@ bool Graphics::mesh::LoadFromObj(string filename)
 
 		if (line[0] == 'v')
 		{
-			vec3D TempVert;
-			stream >> Waste >> TempVert.x >> TempVert.y >> TempVert.z;
-			verts.push_back(TempVert);
+			if (line[1] == 't')
+			{
+				vec2D TempVert;
+				stream >> Waste >> Waste >> TempVert.u >> TempVert.v;
+				TexCoords.push_back(TempVert);
+			}
+			else
+			{
+				vec3D TempVert;
+				stream >> Waste >> TempVert.x >> TempVert.y >> TempVert.z;
+				verts.push_back(TempVert);
+			}
 		}
 
-		else if (line[0] == 'f')
+		if (!hasTexture)
 		{
-			uint64_t face[3] = {0};
-			stream >> Waste >> face[0] >> face[1] >> face[2];
-			tri.push_back({ verts[face[0] - 1], verts[face[1] - 1] , verts[face[2] - 1] });
+			if (line[0] == 'f')
+			{
+				uint64_t face[3] = { 0 };
+				stream >> Waste >> face[0] >> face[1] >> face[2];
+				tri.push_back({ verts[face[0] - 1], verts[face[1] - 1] , verts[face[2] - 1] });
+			}
+		}
+		else
+		{
+			if (line[0] == 'f')
+			{
+				stream >> Waste;
+
+				string tokens[6];
+				int nTokenCount = -1;
+
+
+				while (!stream.eof())
+				{
+					char c = stream.get();
+					if (c == ' ' || c == '/')
+						nTokenCount++;
+					else
+						tokens[nTokenCount].append(1, c);
+				}
+
+				tokens[nTokenCount].pop_back();
+
+				tri.push_back({ verts[stoi(tokens[0]) - 1], verts[stoi(tokens[2]) - 1], verts[stoi(tokens[4]) - 1], TexCoords[stoi(tokens[1]) - 1], TexCoords[stoi(tokens[3]) - 1], TexCoords[stoi(tokens[5]) - 1] });
+			}
 		}
 	}
 
@@ -610,7 +647,10 @@ void Graphics::DrawLine(Point& p1, Point& p2, Color& col, ImageBuff& Buffer)
 			do
 			{
 				CurXu = CurX;
-				Buffer.PutPix(CurXu, CurY, col);
+				if ((CurX < Buffer.width) && (CurY < Buffer.height))
+				{
+					Buffer.PutPix(CurXu, CurY, col);
+				}
 				CurX += Xmod;
 			} while (CurX != endX && CurX >= 0);
 		} while (CurY < endY && CurY >= 0);
@@ -619,12 +659,15 @@ void Graphics::DrawLine(Point& p1, Point& p2, Color& col, ImageBuff& Buffer)
 	{
 		for (CurXu = CurX; CurXu != (CurX + DeltaX); CurXu += (abs(DeltaX) / DeltaX))
 		{
-			Buffer.PutPix(CurXu, CurY, col);
+			if ((CurX < Buffer.width) && (CurY < Buffer.height))
+			{
+				Buffer.PutPix(CurXu, CurY, col);
+			}
 		}
 	}
 }
 
-void Graphics::DrawFlatTop(vec3D& point0, vec3D& point1, vec3D& point2, ImageBuff& Buffer)
+void Graphics::DrawFlatTop(vec3D& point0, vec3D& point1, vec3D& point2, Color col, ImageBuff& Buffer)
 {
 	//Calculate Slopes
 	//==========================================================================================================================
@@ -639,7 +682,7 @@ void Graphics::DrawFlatTop(vec3D& point0, vec3D& point1, vec3D& point2, ImageBuf
 	//==========================================================================================================================
 
 
-	for (int32_t y = StartY; y < EndY; y++)
+	for (uint16_t y = StartY; y < EndY; y++)
 	{
 		vec3D Start;
 		vec3D End;
@@ -652,15 +695,18 @@ void Graphics::DrawFlatTop(vec3D& point0, vec3D& point1, vec3D& point2, ImageBuf
 
 		//Calculate Start and End X
 		//==========================================================================================================================
-		Start.x = (int32_t)ceil(pointx0 - 0.05f);
-		End.x = (int32_t)ceil(pointx1 - 0.05f);
+		Start.x = (uint16_t)ceil(pointx0 - 0.05f);
+		End.x = (uint16_t)ceil(pointx1 - 0.05f);
 		//==========================================================================================================================
-
-		rendertarget->DrawLine(D2D1::Point2F(Start.x, Start.y), D2D1::Point2F(End.x, End.y), Solidbrush, 2.0f);	//Draw Lines
+		for (uint16_t x = Start.x; x < End.x; x++)
+		{
+			Buffer.PutPix(x, y, col);
+		}
+		//rendertarget->DrawLine(D2D1::Point2F(Start.x, Start.y), D2D1::Point2F(End.x, End.y), Solidbrush, 2.0f);	//Draw Lines
 	}
 };
 
-void Graphics::DrawFlatBottom(vec3D& point0, vec3D& point1, vec3D& point2, ImageBuff& Buffer)
+void Graphics::DrawFlatBottom(vec3D& point0, vec3D& point1, vec3D& point2, Color col, ImageBuff& Buffer)
 {
 	const float slope0 = (point1.x - point0.x) / (point1.y - point0.y);
 	const float slope1 = (point2.x - point0.x) / (point2.y - point0.y);
@@ -668,7 +714,7 @@ void Graphics::DrawFlatBottom(vec3D& point0, vec3D& point1, vec3D& point2, Image
 	const int32_t StartY = (int16_t)ceil(point0.y - 0.5f);
 	const int32_t EndY = (int16_t)ceil(point2.y - 0.5f);
 
-	for (int32_t y = StartY; y < EndY; y++)
+	for (uint16_t y = StartY; y < EndY; y++)
 	{
 		vec3D Start;
 		vec3D End;
@@ -679,10 +725,14 @@ void Graphics::DrawFlatBottom(vec3D& point0, vec3D& point1, vec3D& point2, Image
 		const float pointx0 = slope0 * (float(y) + 0.5f - point0.y) + point0.x;
 		const float pointx1 = slope1 * (float(y) + 0.5f - point0.y) + point0.x;
 
-		Start.x = (int32_t)ceil(pointx0 - 0.05f);
-		End.x = (int32_t)ceil(pointx1 - 0.05f);
+		Start.x = (uint16_t)ceil(pointx0 - 0.05f);
+		End.x = (uint16_t)ceil(pointx1 - 0.05f);
 
-		rendertarget->DrawLine(D2D1::Point2F(Start.x, Start.y), D2D1::Point2F(End.x, End.y), Solidbrush, 2.0f);
+		for (uint16_t x = Start.x; x < End.x; x++)
+		{
+			Buffer.PutPix(x, y, col);
+		}
+		//rendertarget->DrawLine(D2D1::Point2F(Start.x, Start.y), D2D1::Point2F(End.x, End.y), Solidbrush, 2.0f);
 	}
 };
 
@@ -739,7 +789,7 @@ void Graphics::DrawTriangle2filled(triangle &Triangle, Color &color, ImageBuff& 
 		{
 			std::swap(vec0, vec1);
 		}
-		DrawFlatTop(*vec0, *vec1, *vec2, Buffer);
+		DrawFlatTop(*vec0, *vec1, *vec2, color, Buffer);
 	}
 
 	else if (vec1->y == vec2->y)	//flatbottom
@@ -748,7 +798,7 @@ void Graphics::DrawTriangle2filled(triangle &Triangle, Color &color, ImageBuff& 
 		{
 			std::swap(vec1, vec2);
 		}
-		DrawFlatBottom(*vec0, *vec1, *vec2, Buffer);
+		DrawFlatBottom(*vec0, *vec1, *vec2, color, Buffer);
 	}
 
 	else //neither
@@ -762,19 +812,86 @@ void Graphics::DrawTriangle2filled(triangle &Triangle, Color &color, ImageBuff& 
 
 		if (vec1->x < vecSplt.x)	//check if triangle is major right
 		{
-			DrawFlatBottom(*vec0, *vec1, vecSplt, Buffer);
-			DrawFlatTop(*vec1, vecSplt, *vec2, Buffer);
+			DrawFlatBottom(*vec0, *vec1, vecSplt, color, Buffer);
+			DrawFlatTop(*vec1, vecSplt, *vec2, color, Buffer);
 		}
 
 		else	//triangle is major left
 		{
-			DrawFlatBottom(*vec0, vecSplt, *vec1, Buffer);
-			DrawFlatTop(vecSplt, *vec1, *vec2, Buffer);
+			DrawFlatBottom(*vec0, vecSplt, *vec1, color, Buffer);
+			DrawFlatTop(vecSplt, *vec1, *vec2, color, Buffer);
 		}
 
 	}
 	//==========================================================================================================================
 
+};
+
+void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageBuff& Buffer)
+{
+	vec3D* vec0 = &Triangle.vectors[0];
+	vec3D* vec1 = &Triangle.vectors[1];
+	vec3D* vec2 = &Triangle.vectors[2];
+
+	//vector Sort by y value
+	//==========================================================================================================================
+	if (vec1->y < vec0->y)
+	{
+		std::swap(vec0, vec1);
+	}
+	if (vec2->y < vec1->y)
+	{
+		std::swap(vec1, vec2);
+	}
+	if (vec1->y < vec0->y)
+	{
+		std::swap(vec0, vec1);
+	}
+	//==========================================================================================================================
+
+	//Check for natural flattop or bottom or neither
+	//==========================================================================================================================
+	if (vec0->y == vec1->y)	//flattop
+	{
+		if (vec1->x < vec0->x)	//vector sort by x value
+		{
+			std::swap(vec0, vec1);
+		}
+		DrawFlatTop(*vec0, *vec1, *vec2, color, Buffer);
+	}
+
+	else if (vec1->y == vec2->y)	//flatbottom
+	{
+		if (vec2->x < vec1->x)	//vector sort by x value
+		{
+			std::swap(vec1, vec2);
+		}
+		DrawFlatBottom(*vec0, *vec1, *vec2, color, Buffer);
+	}
+
+	else //neither
+	{
+		float alpha = ((vec1->y - vec0->y) / (vec2->y - vec0->y)); //spliting point
+
+		//Splitting vector
+		vec3D vecSplt;
+		vecSplt.x = vec0->x + (vec2->x - vec0->x) * alpha;
+		vecSplt.y = vec0->y + (vec2->y - vec0->y) * alpha;
+
+		if (vec1->x < vecSplt.x)	//check if triangle is major right
+		{
+			DrawFlatBottom(*vec0, *vec1, vecSplt, color, Buffer);
+			DrawFlatTop(*vec1, vecSplt, *vec2, color, Buffer);
+		}
+
+		else	//triangle is major left
+		{
+			DrawFlatBottom(*vec0, vecSplt, *vec1, color, Buffer);
+			DrawFlatTop(vecSplt, *vec1, *vec2, color, Buffer);
+		}
+
+	}
+	//==========================================================================================================================
 };
 
 
@@ -911,7 +1028,7 @@ void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& Buffer)
 				//==========================================================================================================================
 
 				TriangleToRasterVector.push_back(ProjectedTri);
-				//DrawTriangle2filled(ProjectedTri, color);
+				//DrawTriangle2filled(ProjectedTri, color, Buffer);
 			}
 		}
 	}

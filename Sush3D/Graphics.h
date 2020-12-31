@@ -93,7 +93,7 @@ public:
 	{
 		vector<triangle> tri;
 		
-		bool LoadFromObj(string filename);
+		bool LoadFromObj(string filename, bool hasTexture = false);
 	};
 
 	struct GlobalLight
@@ -160,8 +160,11 @@ public:
 	//Draw functions
 	//==========================================================================================================================
 private:
-	void DrawFlatTop(vec3D& point0, vec3D& point1, vec3D& point2, ImageBuff& Buffer);	//draw triangle with flattop
-	void DrawFlatBottom(vec3D& point0, vec3D& point1, vec3D& point2, ImageBuff& Buffer);	//draw triangle with flatbottom
+	void DrawFlatTop(vec3D& point0, vec3D& point1, vec3D& point2, Color col, ImageBuff& Buffer);	//draw triangle with flattop
+	void DrawFlatBottom(vec3D& point0, vec3D& point1, vec3D& point2, Color col, ImageBuff& Buffer);	//draw triangle with flatbottom
+
+	void DrawFlatTopTextured(vec3D& point0, vec3D& point1, vec3D& point2, BitMap& texture, ImageBuff& Buffer);	//draw triangle with flattop
+	void DrawFlatBottomTextured(vec3D& point0, vec3D& point1, vec3D& point2, BitMap& texture, ImageBuff& Buffer);	//draw triangle with flatbottom
 
 public:
 	void BeginDraw()
@@ -180,6 +183,7 @@ public:
 	void DrawTriangle(uint16_t& x1, uint16_t& y1, uint16_t& x2, uint16_t& y2, uint16_t& x3, uint16_t& y3, uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& a, ImageBuff& Buffer);
 	void DrawTriangle2(triangle Triangle, Color color, ImageBuff& Buffer);
 	void DrawTriangle2filled(triangle &Triangle, Color &color, ImageBuff& Buffer);
+	void DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageBuff& Buffer);
 	void DrawMesh(mesh mesh, Color color, ImageBuff& Buffer);
 
 	void refresh(ImageBuff& Buffer);

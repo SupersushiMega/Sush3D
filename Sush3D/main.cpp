@@ -73,7 +73,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 	Graphics::mesh CubeMesh;
 	Graphics::mesh TestMesh;
 
-	TestMesh.LoadFromObj("Teapot.obj");
+	TestMesh.LoadFromObj("TestTexture_Cube.obj", true);
 
 	CubeMesh.tri = {
 
@@ -104,7 +104,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 	};
 
 	Graphics::BitMap bitmap;
-	bitmap.LoadBitmap("Balls.bmp");
+	bitmap.LoadBitmap("TestTexture_Cube.bmp");
 	uint8_t frame = 0;
 	while (message.message != WM_QUIT)
 	{
@@ -152,25 +152,26 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 			}
 
 			//render
-			Graphics::Color color = { 0.0f, 0.0f, 0.0f, 0.0f };
+			Graphics::Color color = { 0.5f, 0.5f, 0.5f, 0.0f };
 
 			Graphics::Point p1 = { rand() % 1024, rand() % 1024 };
 			Graphics::Point p2 = { rand() % 1024, rand() % 1024 };
-			if (frame == 0)
+			if (frame)
 			{
 				for (uint16_t Y = 0; Y < bitmap.Resolution[0]; Y++)
 				{
 					for (uint16_t X = 0; X < bitmap.Resolution[1]; X++)
 					{
-						imageBuffer.PutPix(X, Y, bitmap.Pixels[Y][X]);
+						imageBuffer.PutPix(X, Y, color);
 					}
 				}
 			}
-			graphics->BeginDraw();
-			graphics->DrawMesh(CubeMesh, color, imageBuffer);
-			graphics->EndDraw();
+			//graphics->BeginDraw();
+			//graphics->ClearScreen(0, 0, 0, imageBuffer);
+			graphics->DrawMesh(TestMesh, color, imageBuffer);
+			//graphics->EndDraw();
 			//graphics->DrawLine(p1, p2, color, imageBuffer);
-			if (frame == 0)
+			if (frame)
 			{
 				graphics->refresh(imageBuffer);
 			}
