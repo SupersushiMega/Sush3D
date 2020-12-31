@@ -72,6 +72,7 @@ public:
 	{
 		float u = 0.0f;
 		float v = 0.0f;
+		float w = 1.0f;
 	};
 
 	struct vec3D
@@ -162,9 +163,6 @@ public:
 private:
 	void DrawFlatTop(vec3D& point0, vec3D& point1, vec3D& point2, Color col, ImageBuff& Buffer);	//draw triangle with flattop
 	void DrawFlatBottom(vec3D& point0, vec3D& point1, vec3D& point2, Color col, ImageBuff& Buffer);	//draw triangle with flatbottom
-
-	void DrawFlatTopTextured(vec3D& point0, vec3D& point1, vec3D& point2, vec2D& UVpoint0, vec2D& UVpoint1, vec2D& UVpoint2, BitMap& texture, ImageBuff& Buffer);	//draw triangle with flattop
-	void DrawFlatBottomTextured(vec3D& XYpoint0, vec3D& XYpoint1, vec3D& XYpoint2, vec2D& UVpoint0, vec2D& UVpoint1, vec2D& UVpoint2, BitMap& texture, ImageBuff& Buffer);	//draw triangle with flatbottom
 
 public:
 	void BeginDraw()
