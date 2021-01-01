@@ -23,9 +23,10 @@ class Graphics
 	ID2D1SolidColorBrush* Solidbrush;
 	ID2D1Bitmap* BufferBmp;
 
+	float* Alpha_DepthBuffer;
+
 public:
 
-	uint16_t Resolution[2] = { 0 };
 	float fov = 90.0f;
 	float ViewingDist = 1000.0f;
 	float DistfromScreen = 0.5f;
@@ -56,8 +57,27 @@ public:
 			ImageBuff(uint16_t Width, uint16_t Height);
 			~ImageBuff();
 			void PutPix(uint16_t &x, uint16_t &y, Color &col);
+			Color GetPix(uint16_t& x, uint16_t& y);
 
 			uint32_t* PixelsPtr = nullptr;
+			uint16_t width = 0;
+			uint16_t height = 0;
+	};
+
+	class Alpha_DepthBuff
+	{
+		public:
+			Alpha_DepthBuff(uint16_t Width, uint16_t Height);
+			~Alpha_DepthBuff();
+			void putDepth(uint16_t& x, uint16_t& y, float& Depth);
+			void putAlpha(uint16_t& x, uint16_t& y, float& Alpha);
+
+			float getDepth(uint16_t& x, uint16_t& y);
+			float getAlpha(uint16_t& x, uint16_t& y);
+
+			float* DepthPtr = nullptr;
+			float* AlphaPtr = nullptr;
+
 			uint16_t width = 0;
 			uint16_t height = 0;
 	};
@@ -93,6 +113,8 @@ public:
 	struct mesh
 	{
 		vector<triangle> tri;
+
+		vec3D WorldPos = { 0.0f,0.0f, 0.0f };
 		
 		bool LoadFromObj(string filename, bool hasTexture = false);
 	};
@@ -114,11 +136,19 @@ public:
 
 	struct BitMap
 	{
-		uint32_t Resolution[2];
+		uint32_t MapResolution[2];
 		vector<vector<Color>> Pixels;
 
 		bool LoadBitmap(const char* filename, bool invert = false);
 	};
+
+	struct resolution
+	{
+		uint16_t width = 0;
+		uint16_t height = 0;
+	};
+
+	resolution Resolution;
 
 	GlobalLight globalLight;
 
@@ -175,17 +205,17 @@ public:
 		rendertarget->EndDraw();
 	}
 
-	void ClearScreen(float r, float g, float b, ImageBuff& Buffer);
-	void DrawPixel(uint16_t&x, uint16_t&y, Color &col, ImageBuff& Buffer);
-	void DrawLine(Point& p1, Point& p2, Color& col, ImageBuff& Buffer);
-	void DrawTriangle(uint16_t& x1, uint16_t& y1, uint16_t& x2, uint16_t& y2, uint16_t& x3, uint16_t& y3, uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& a, ImageBuff& Buffer);
-	void DrawTriangle2(triangle Triangle, Color color, ImageBuff& Buffer);
-	void DrawTriangle2filled(triangle &Triangle, Color &color, ImageBuff& Buffer);
-	void DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageBuff& Buffer);
-	void DrawMesh(mesh mesh, Color color, ImageBuff& Buffer);
-	void DrawMeshTextured(mesh mesh, BitMap& texture, ImageBuff& Buffer);
+	void ClearScreen(float r, float g, float b, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
+	void DrawPixel(uint16_t&x, uint16_t&y, Color &col, ImageBuff& imageBuff);
+	void DrawLine(Point& p1, Point& p2, Color& col, ImageBuff& imageBuff);
+	void DrawTriangle(uint16_t& x1, uint16_t& y1, uint16_t& x2, uint16_t& y2, uint16_t& x3, uint16_t& y3, uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& a, ImageBuff& imageBuff);
+	void DrawTriangle2(triangle Triangle, Color color, ImageBuff& imageBuff);
+	void DrawTriangle2filled(triangle &Triangle, Color &color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
+	void DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
+	void DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
+	void DrawMeshTextured(mesh mesh, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 
-	void refresh(ImageBuff& Buffer);
+	void refresh(ImageBuff& imageBuff);
 	//==========================================================================================================================
 
 	//Other functions

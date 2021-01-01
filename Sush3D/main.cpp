@@ -24,9 +24,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int nCmdShow)
 {
 
-	RECT resolution = { 0, 0, 1024, 1024 };
+	RECT resolution = { 0, 0, 1024, 800 };
 
 	Graphics::ImageBuff imageBuffer = Graphics::ImageBuff(resolution.right, resolution.bottom);
+	Graphics::Alpha_DepthBuff AlphaDepthBuffer = Graphics::Alpha_DepthBuff(resolution.right, resolution.bottom);
 
 	//Window Setup
 	//=========================================================================================
@@ -73,7 +74,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 	Graphics::mesh CubeMesh;
 	Graphics::mesh TestMesh;
 
-	TestMesh.LoadFromObj("TestTexture_Cube.obj", true);
+	TestMesh.LoadFromObj("Terrain.obj", true);
 
 	CubeMesh.tri = {
 
@@ -104,7 +105,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 	};
 
 	Graphics::BitMap bitmap;
-	bitmap.LoadBitmap("TestTexture_Cube.bmp", true);
+	bitmap.LoadBitmap("TerrainUV.bmp", true);
 	uint8_t frame = 0;
 	while (message.message != WM_QUIT)
 	{
@@ -167,20 +168,24 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 			//render
 			Graphics::Color color = { 0.5f, 0.5f, 0.5f, 0.0f };
 
-			if (frame)
+
+			graphics->ClearScreen(0, 0, 0, imageBuffer, AlphaDepthBuffer);
+			/*for (uint16_t Y = 0; Y < bitmap.Resolution[0]; Y++)
 			{
-				for (uint16_t Y = 0; Y < bitmap.Resolution[0]; Y++)
+				for (uint16_t X = 0; X < bitmap.Resolution[1]; X++)
 				{
-					for (uint16_t X = 0; X < bitmap.Resolution[1]; X++)
-					{
-						imageBuffer.PutPix(X, Y, bitmap.Pixels[Y][X]);
-					}
+					float tmp = 0.0f;
+					imageBuffer.PutPix(X, Y, bitmap.Pixels[Y][X]);
 				}
-			}
+			}*/
+
+
 			//graphics->BeginDraw();
-			//graphics->ClearScreen(0, 0, 0, imageBuffer);
 			//graphics->DrawMesh(TestMesh, color, imageBuffer);
-			graphics->DrawMeshTextured(TestMesh, bitmap, imageBuffer);
+			TestMesh.WorldPos = { 0.0f, 0.0f, 0.0f };
+			graphics->DrawMeshTextured(TestMesh, bitmap, imageBuffer, AlphaDepthBuffer);
+			TestMesh.WorldPos = { 10.0f, 10.0f, 10.0f };
+			//graphics->DrawMeshTextured(TestMesh, bitmap, imageBuffer, AlphaDepthBuffer);
 			//graphics->EndDraw();
 			//graphics->DrawLine(p1, p2, color, imageBuffer);
 			if (frame)
