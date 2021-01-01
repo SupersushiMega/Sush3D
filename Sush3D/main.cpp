@@ -8,13 +8,14 @@ Made by SupersushiMega with help of javidx9 code-It-Yourself 3D Graphics Engine 
 #include <algorithm>
 
 Graphics* graphics;
-
+bool closeWindow = false;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	if (uMsg == WM_DESTROY)
 	{
 		PostQuitMessage(0);
+		closeWindow = true;
 		return 0;
 	}
 
@@ -23,7 +24,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int nCmdShow)
 {
-
 	RECT resolution = { 0, 0, 1024, 800 };
 
 	Graphics::ImageBuff imageBuffer = Graphics::ImageBuff(resolution.right, resolution.bottom);
@@ -71,43 +71,24 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 	MSG message;
 	message.message = WM_NULL;
 
-	Graphics::mesh CubeMesh;
-	Graphics::mesh TestMesh;
+	Graphics::mesh Suzzane;
 
-	TestMesh.LoadFromObj("Terrain.obj", true);
+	Graphics::mesh terrain;
 
-	CubeMesh.tri = {
+	Suzzane.LoadFromObj("Suzzane.obj", true);
+	terrain.LoadFromObj("Terrain.obj", true);
 
-		// SOUTH
-		{ 0.0f, 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 0.0f, 1.0f,		0.0f, 1.0f, 1.0f,		0.0f, 0.0f, 1.0f,		1.0f, 0.0f, 1.0f,},
-		{ 0.0f, 0.0f, 0.0f, 1.0f,    1.0f, 1.0f, 0.0f, 1.0f,    1.0f, 0.0f, 0.0f, 1.0f,		0.0f, 1.0f, 1.0f,		1.0f, 0.0f, 1.0f,		1.0f, 1.0f, 1.0f,},
+	Suzzane.WorldPos = { 10.0f, 10.0f, 10.0f };
 
-		// EAST           																			   
-		{ 1.0f, 0.0f, 0.0f, 1.0f,    1.0f, 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f, 1.0f,		0.0f, 1.0f, 1.0f,		0.0f, 0.0f, 1.0f,		1.0f, 0.0f, 1.0f,},
-		{ 1.0f, 0.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 1.0f, 1.0f,		0.0f, 1.0f, 1.0f,		1.0f, 0.0f, 1.0f,		1.0f, 1.0f, 1.0f,},
+	Graphics::BitMap SuzzaneBMP;
+	SuzzaneBMP.LoadBitmapRGB("Suzzane.bmp", true);
+	SuzzaneBMP.LoadBitmapAlpha("SuzzaneAlpha.bmp", true);
 
-		// NORTH           																			   
-		{ 1.0f, 0.0f, 1.0f, 1.0f,    1.0f, 1.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f, 1.0f,		0.0f, 1.0f, 1.0f,		0.0f, 0.0f, 1.0f,		1.0f, 0.0f, 1.0f,},
-		{ 1.0f, 0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f, 1.0f,    0.0f, 0.0f, 1.0f, 1.0f,		0.0f, 1.0f, 1.0f,		1.0f, 0.0f, 1.0f,		1.0f, 1.0f, 1.0f,},
+	Graphics::BitMap terrainBMP;
+	terrainBMP.LoadBitmapRGB("TerrainUV.bmp", true);
 
-		// WEST            																			   
-		{ 0.0f, 0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f, 1.0f,    0.0f, 1.0f, 0.0f, 1.0f,		0.0f, 1.0f, 1.0f,		0.0f, 0.0f, 1.0f,		1.0f, 0.0f, 1.0f,},
-		{ 0.0f, 0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f, 1.0f,		0.0f, 1.0f, 1.0f,		1.0f, 0.0f, 1.0f,		1.0f, 1.0f, 1.0f,},
-
-		// TOP             																			   
-		{ 0.0f, 1.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f, 1.0f,    1.0f, 1.0f, 1.0f, 1.0f,		0.0f, 1.0f, 1.0f,		0.0f, 0.0f, 1.0f,		1.0f, 0.0f, 1.0f,},
-		{ 0.0f, 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f, 1.0f,    1.0f, 1.0f, 0.0f, 1.0f,		0.0f, 1.0f, 1.0f,		1.0f, 0.0f, 1.0f,		1.0f, 1.0f, 1.0f,},
-
-		// BOTTOM          																			  
-		{ 1.0f, 0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 0.0f, 1.0f,		0.0f, 1.0f, 1.0f,		0.0f, 0.0f, 1.0f,		1.0f, 0.0f, 1.0f,},
-		{ 1.0f, 0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 0.0f, 1.0f,    1.0f, 0.0f, 0.0f, 1.0f,		0.0f, 1.0f, 1.0f,		1.0f, 0.0f, 1.0f,		1.0f, 1.0f, 1.0f,},
-
-	};
-
-	Graphics::BitMap bitmap;
-	bitmap.LoadBitmap("TerrainUV.bmp", true);
 	uint8_t frame = 0;
-	while (message.message != WM_QUIT)
+	while (!closeWindow)
 	{
 		if (PeekMessage(&message, windowhandle, 0, 0, PM_REMOVE))
 		{
@@ -182,9 +163,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 
 			//graphics->BeginDraw();
 			//graphics->DrawMesh(TestMesh, color, imageBuffer);
-			TestMesh.WorldPos = { 0.0f, 0.0f, 0.0f };
-			graphics->DrawMeshTextured(TestMesh, bitmap, imageBuffer, AlphaDepthBuffer);
-			TestMesh.WorldPos = { 10.0f, 10.0f, 10.0f };
+			graphics->DrawMeshTextured(terrain, terrainBMP, imageBuffer, AlphaDepthBuffer);
+			graphics->DrawMeshTextured(Suzzane, SuzzaneBMP, imageBuffer, AlphaDepthBuffer);
 			//graphics->DrawMeshTextured(TestMesh, bitmap, imageBuffer, AlphaDepthBuffer);
 			//graphics->EndDraw();
 			//graphics->DrawLine(p1, p2, color, imageBuffer);

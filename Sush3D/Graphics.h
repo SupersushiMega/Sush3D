@@ -139,7 +139,9 @@ public:
 		uint32_t MapResolution[2];
 		vector<vector<Color>> Pixels;
 
-		bool LoadBitmap(const char* filename, bool invert = false);
+		bool LoadBitmapRGB(const char* filename, bool invert = false);	//Load RGB Bitmap for RGB values
+
+		bool LoadBitmapAlpha(const char* filename, bool invert = false);	//Load BW Bitmap for Alpha values (Has to be equal in size to RGB equivalent)	(if now Alpha map has been loaded all Alpha is set to max(Not see through))
 	};
 
 	struct resolution
