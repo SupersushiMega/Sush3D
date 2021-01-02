@@ -38,7 +38,7 @@ void Graphics::Alpha_DepthBuff::putDepth(uint16_t& x, uint16_t& y, float& Depth)
 
 void Graphics::Alpha_DepthBuff::putAlpha(uint16_t& x, uint16_t& y, float& Alpha)
 {
-	DepthPtr[y * width + x] = Alpha;
+	AlphaPtr[y * width + x] = Alpha;
 }
 
 float Graphics::Alpha_DepthBuff::getDepth(uint16_t& x, uint16_t& y)
@@ -48,7 +48,7 @@ float Graphics::Alpha_DepthBuff::getDepth(uint16_t& x, uint16_t& y)
 
 float Graphics::Alpha_DepthBuff::getAlpha(uint16_t& x, uint16_t& y)
 {
-	return DepthPtr[y * width + x];
+	return AlphaPtr[y * width + x];
 }
 
 Graphics::Graphics()
@@ -762,11 +762,12 @@ void Graphics::ClearScreen(float r, float g, float b, ImageBuff& imageBuff, Alph
 	{
 		for (uint16_t X = 0; X < Resolution.width; X++)
 		{
-			float tmp = 0.0f;
+			float Depth = 0.0f;
+			float Alpha = 1.0f;
 			Color col = { r, g, b, 1.0f };
 			imageBuff.PutPix(X, Y, col);
-			AlphaDepthBuff.putDepth(X, Y, tmp);
-			AlphaDepthBuff.putAlpha(X, Y, tmp);
+			AlphaDepthBuff.putDepth(X, Y, Depth);
+			AlphaDepthBuff.putAlpha(X, Y, Alpha);
 		}
 	}
 	while (0);
@@ -1135,7 +1136,8 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 
 				if ((TextureV < 2 && TextureV >= 0) && (TextureU < 2 && TextureU >= 0))
 				{
-					if (TextureW > AlphaDepthBuff.getDepth(x, y) || AlphaDepthBuff.getAlpha(x, y) != 1)
+					//AlphaDepthBuff.getAlpha(x, y) != 1
+					if (TextureW > AlphaDepthBuff.getDepth(x, y))
 					{
 						//imageBuff.PutPix(temp1, temp2, col);
 						color = texture.Pixels[(uint16_t)((TextureV / TextureW) * (texture.MapResolution[1] - 1)) % texture.MapResolution[1]][(uint16_t)((TextureU / TextureW) * (texture.MapResolution[0] - 1)) % texture.MapResolution[0]];
@@ -1147,6 +1149,25 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 						imageBuff.PutPix(x, y, color);
 						AlphaDepthBuff.putDepth(x, y, TextureW);
 						AlphaDepthBuff.putAlpha(x, y, color.a);
+					}
+					else
+					{
+						if (AlphaDepthBuff.getAlpha(x, y) != 1)
+						{
+							color = texture.Pixels[(uint16_t)((TextureV / TextureW) * (texture.MapResolution[1] - 1)) % texture.MapResolution[1]][(uint16_t)((TextureU / TextureW) * (texture.MapResolution[0] - 1)) % texture.MapResolution[0]];
+							color.a = 1.0f - AlphaDepthBuff.getAlpha(x, y);
+							//color.r = (imageBuff.GetPix(x, y).r * color.a) + (color.r * (1 - color.a));
+							//color.g = (imageBuff.GetPix(x, y).g * color.a) + (color.g * (1 - color.a));
+							//color.b = (imageBuff.GetPix(x, y).b * color.a) + (color.b * (1 - color.a));
+
+							color.r = (color.r * color.a) + (imageBuff.GetPix(x, y).r * (1 - color.a));
+							color.g = (color.g * color.a) + (imageBuff.GetPix(x, y).g * (1 - color.a));
+							color.b = (color.b * color.a) + (imageBuff.GetPix(x, y).b * (1 - color.a));
+
+							imageBuff.PutPix(x, y, color);
+							//AlphaDepthBuff.putDepth(x, y, TextureW);
+							//AlphaDepthBuff.putAlpha(x, y, color.a);
+						}
 					}
 				}
 				t += tStep;
@@ -1227,7 +1248,8 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 
 				if ((TextureV < 2 && TextureV >= 0) && (TextureU < 2 && TextureU >= 0))
 				{
-					if (TextureW > AlphaDepthBuff.getDepth(x, y) || AlphaDepthBuff.getAlpha(x, y) != 1)
+					//AlphaDepthBuff.getAlpha(x, y) != 1
+					if (TextureW > AlphaDepthBuff.getDepth(x, y))
 					{
 						//imageBuff.PutPix(temp1, temp2, col);
 						color = texture.Pixels[(uint16_t)((TextureV / TextureW) * (texture.MapResolution[1] - 1)) % texture.MapResolution[1]][(uint16_t)((TextureU / TextureW) * (texture.MapResolution[0] - 1)) % texture.MapResolution[0]];
@@ -1239,6 +1261,25 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 						imageBuff.PutPix(x, y, color);
 						AlphaDepthBuff.putDepth(x, y, TextureW);
 						AlphaDepthBuff.putAlpha(x, y, color.a);
+					}
+					else
+					{
+						if (AlphaDepthBuff.getAlpha(x, y) != 1)
+						{
+							color = texture.Pixels[(uint16_t)((TextureV / TextureW) * (texture.MapResolution[1] - 1)) % texture.MapResolution[1]][(uint16_t)((TextureU / TextureW) * (texture.MapResolution[0] - 1)) % texture.MapResolution[0]];
+							color.a = 1.0f - AlphaDepthBuff.getAlpha(x, y);
+							//color.r = (imageBuff.GetPix(x, y).r * color.a) + (color.r * (1 - color.a));
+							//color.g = (imageBuff.GetPix(x, y).g * color.a) + (color.g * (1 - color.a));
+							//color.b = (imageBuff.GetPix(x, y).b * color.a) + (color.b * (1 - color.a));
+
+							color.r = (color.r * color.a) + (imageBuff.GetPix(x, y).r * (1 - color.a));
+							color.g = (color.g * color.a) + (imageBuff.GetPix(x, y).g * (1 - color.a));
+							color.b = (color.b * color.a) + (imageBuff.GetPix(x, y).b * (1 - color.a));
+
+							imageBuff.PutPix(x, y, color);
+							//AlphaDepthBuff.putDepth(x, y, TextureW);
+							//AlphaDepthBuff.putAlpha(x, y, color.a);
+						}
 					}
 				}
 				t += tStep;
@@ -1475,13 +1516,19 @@ void Graphics::DrawMeshTextured(mesh mesh, BitMap& texture, ImageBuff& imageBuff
 	target = AddVectors(Graphics::camera.GlobalPos, lookDir);
 	matrix4x4 CamMatrix = MakePointAtMatrix(Graphics::camera.GlobalPos, target, Graphics::UpVec);
 
-
-	float temp = 0.1f;
-
-	vec3D tempVec = MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.z);
-
+	vec3D tempVec = MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.x);
 	Graphics::camera.GlobalPos = Graphics::AddVectors(Graphics::camera.GlobalPos, tempVec);
-	Graphics::camera.GlobalPos.x += Graphics::camera.LocalPosDelta.x;
+
+
+	target = { 1.0f, 0.0f, 0.0f };
+	lookDir = MatrixVectorMultiplication(target, CamRotYMatrix);
+	target = AddVectors(Graphics::camera.GlobalPos, lookDir);
+	CamMatrix = MakePointAtMatrix(Graphics::camera.GlobalPos, target, Graphics::UpVec);
+
+	tempVec = MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.z);
+	Graphics::camera.GlobalPos = Graphics::AddVectors(Graphics::camera.GlobalPos, tempVec);
+
+	//Graphics::camera.GlobalPos.x += Graphics::camera.LocalPosDelta.x;
 	Graphics::camera.GlobalPos.y += Graphics::camera.LocalPosDelta.y;
 
 	matrix4x4 ViewMatrix = MatrixInvertQuick(CamMatrix);
@@ -1659,6 +1706,10 @@ void Graphics::DrawMeshTextured(mesh mesh, BitMap& texture, ImageBuff& imageBuff
 			
 		}
 	}
+	Color col = { 0,1,0,1 };
+	uint16_t w = imageBuff.width / 2;
+	uint16_t h = imageBuff.height / 2;
+	imageBuff.PutPix(w, h, col);
 	//==========================================================================================================================
 };
 

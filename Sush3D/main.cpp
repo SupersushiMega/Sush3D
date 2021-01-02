@@ -139,11 +139,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 
 			if (GetAsyncKeyState(VK_LEFT))	//Left rotation
 			{
-				graphics->camera.TargetRot.y += 0.1f;
+				graphics->camera.TargetRot.y += -0.1f;
 			}
 			else if (GetAsyncKeyState(VK_RIGHT))	//Right rotation
 			{
-				graphics->camera.TargetRot.y += -0.1f;
+				graphics->camera.TargetRot.y += 0.1f;
 			}
 
 			//render
@@ -165,6 +165,16 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 			//graphics->DrawMesh(TestMesh, color, imageBuffer);
 			graphics->DrawMeshTextured(terrain, terrainBMP, imageBuffer, AlphaDepthBuffer);
 			graphics->DrawMeshTextured(Suzzane, SuzzaneBMP, imageBuffer, AlphaDepthBuffer);
+
+			uint16_t w = imageBuffer.width / 2;
+			uint16_t h = imageBuffer.height / 2;
+
+			char buffer[500];
+
+			sprintf_s(buffer, "d=%f, a=%f\n", AlphaDepthBuffer.getDepth(w, h), AlphaDepthBuffer.getAlpha(w, h));
+
+			OutputDebugStringA(buffer);
+
 			//graphics->DrawMeshTextured(TestMesh, bitmap, imageBuffer, AlphaDepthBuffer);
 			//graphics->EndDraw();
 			//graphics->DrawLine(p1, p2, color, imageBuffer);
