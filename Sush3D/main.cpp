@@ -71,14 +71,18 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 	MSG message;
 	message.message = WM_NULL;
 
+	Graphics::mesh Logo;
 	Graphics::mesh Suzzane;
-
 	Graphics::mesh terrain;
 
+	Logo.LoadFromObj("Sush3DLogo.obj", true);
+	Logo.WorldPos = { 0.0f, -50.0f, 25.0f };
+
 	Suzzane.LoadFromObj("Suzzane.obj", true);
+	Suzzane.WorldPos = { 10.0f, 10.0f, 10.0f };
+
 	terrain.LoadFromObj("Terrain.obj", true);
 
-	Suzzane.WorldPos = { 10.0f, 10.0f, 10.0f };
 
 	Graphics::BitMap SuzzaneBMP;
 	SuzzaneBMP.LoadBitmapRGB("Suzzane.bmp", true);
@@ -86,6 +90,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 
 	Graphics::BitMap terrainBMP;
 	terrainBMP.LoadBitmapRGB("TerrainUV.bmp", true);
+
+	Graphics::BitMap LogoBMP;
+	LogoBMP.LoadBitmapRGB("Sush3DLogo_RGB.bmp", true);
 
 	uint8_t frame = 0;
 	while (!closeWindow)
@@ -163,10 +170,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 
 			//graphics->BeginDraw();
 			//graphics->DrawMesh(TestMesh, color, imageBuffer);
-			//graphics->DrawMeshTextured(Suzzane, SuzzaneBMP, imageBuffer, AlphaDepthBuffer);
-			//graphics->DrawMeshTextured(terrain, terrainBMP, imageBuffer, AlphaDepthBuffer);
-			graphics->DrawMesh(terrain, color, imageBuffer);
-			graphics->DrawMesh(Suzzane, color, imageBuffer);
+
+			
+			graphics->DrawMeshTextured(Logo, LogoBMP, imageBuffer, AlphaDepthBuffer);
+			graphics->DrawMeshTextured(Suzzane, SuzzaneBMP, imageBuffer, AlphaDepthBuffer);
+			graphics->DrawMeshTextured(terrain, terrainBMP, imageBuffer, AlphaDepthBuffer);
 
 			uint16_t w = imageBuffer.width / 2;
 			uint16_t h = imageBuffer.height / 2;

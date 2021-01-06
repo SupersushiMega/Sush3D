@@ -1002,8 +1002,8 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 	}
 	//==========================================================================================================================
 
-	int32_t dy1 = (uint16_t)vec1->y - (uint16_t)vec0->y;
-	int32_t dx1 = (uint16_t)vec1->x - (uint16_t)vec0->x;
+	int32_t dy1 = (int32_t)vec1->y - (uint16_t)vec0->y;
+	int32_t dx1 = (int32_t)vec1->x - (uint16_t)vec0->x;
 
 	float dv1 = tex1->v - tex0->v;
 	float du1 = tex1->u - tex0->u;
@@ -1033,38 +1033,18 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 	float TextureV = 0.0f;
 	float TextureW = 0.0f;
 
-	if (dy1)
+	if (dy1 != 0)
 	{
 		Xstep1 = dx1 / (float)abs(dy1);
-	}
-	if (dy2)
-	{
-		Xstep2 = dx2 / (float)abs(dy2);
-	}
-
-	if (dy1)
-	{
 		Ustep1 = du1 / (float)abs(dy1);
-	}
-	if (dy1)
-	{
 		Vstep1 = dv1 / (float)abs(dy1);
-	}
-	if (dy1)
-	{
 		Wstep1 = dw1 / (float)abs(dy1);
 	}
-
-	if (dy2)
+	if (dy2 != 0)
 	{
+		Xstep2 = dx2 / (float)abs(dy2);
 		Ustep2 = du2 / (float)abs(dy2);
-	}
-	if (dy2)
-	{
 		Vstep2 = dv2 / (float)abs(dy2);
-	}
-	if (dy2)
-	{
 		Wstep2 = dw2 / (float)abs(dy2);
 	}
 
@@ -1074,8 +1054,8 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 	{
 		for (uint16_t y = vec0->y; y <= vec1->y; y++)
 		{
-			int32_t xStart = (uint16_t)vec0->x + (float)(y - vec0->y) * Xstep1;
-			int32_t xEnd = (uint16_t)vec0->x + (float)(y - vec0->y) * Xstep2;
+			int32_t xStart = (int32_t)vec0->x + (float)(y - vec0->y) * Xstep1;
+			int32_t xEnd = (int32_t)vec0->x + (float)(y - vec0->y) * Xstep2;
 
 			float uStart = tex0->u + (float)(y - vec0->y) * Ustep1;
 			float uEnd = tex0->u + (float)(y - vec0->y) * Ustep2;
@@ -1111,7 +1091,7 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 				uint16_t temp1 = (uint16_t)((TextureU / TextureW) * (texture.MapResolution[0] - 1)) % texture.MapResolution[0];
 				uint16_t temp2 = (uint16_t)((TextureV / TextureW) * (texture.MapResolution[1] - 1)) % texture.MapResolution[1];
 
-				if ((TextureV < 2 && TextureV >= 0) && (TextureU < 2 && TextureU >= 0))
+				if ((TextureV < 1 && TextureV >= 0) && (TextureU < 1 && TextureU >= 0) && (x < imageBuff.width && x >= 0))
 				{
 					//AlphaDepthBuff.getAlpha(x, y) != 1
 					if (TextureW > AlphaDepthBuff.getDepth(x, y))
@@ -1165,9 +1145,6 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 	{
 		Xstep2 = dx2 / (float)abs(dy2);
 	}
-
-	Ustep1 = 0.0f;
-	Vstep1 = 0.0f;
 
 	if (dy1)
 	{
@@ -1223,7 +1200,7 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 				uint16_t temp1 = (uint16_t)((TextureU / TextureW) * (texture.MapResolution[0] - 1)) % texture.MapResolution[0];
 				uint16_t temp2 = (uint16_t)((TextureV / TextureW) * (texture.MapResolution[1] - 1)) % texture.MapResolution[1];
 
-				if ((TextureV < 2 && TextureV >= 0) && (TextureU < 2 && TextureU >= 0))
+				if ((TextureV < 1 && TextureV >= 0) && (TextureU < 1 && TextureU >= 0) && (x < imageBuff.width && x >= 0))
 				{
 					//AlphaDepthBuff.getAlpha(x, y) != 1
 					if (TextureW > AlphaDepthBuff.getDepth(x, y))
