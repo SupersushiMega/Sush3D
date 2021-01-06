@@ -778,60 +778,37 @@ void Graphics::DrawPixel(uint16_t &x, uint16_t&y, Color &col, ImageBuff& DepthBu
 	DepthBuffer.PutPix(x, y, col);
 }
 
-void Graphics::DrawLine(Point& p1, Point& p2, Color& col, ImageBuff& DepthBuffer)
+void Graphics::DrawLine(Point& p1, Point& p2, Color& col, ImageBuff& imageBuff)
 {
-	float Xmod = 0.0f;
-	float Ymod = 0.0f;
+	Point* P1 = &p1;
+	Point* P2 = &p2;
 
-	float CurX = 0.0f;
-	uint16_t CurY = 0.0f;
+	int32_t deltaY = 0;
 
-	float endX = 0;
-	uint16_t endY = 0;
+	uint16_t curY = 0;
+	uint16_t curX = 0;
 
-	if (p1.y < p2.y)
+	float XperY = 0;
+	float curX_f = 0;
+
+	if (P1->x > P2->x)
 	{
-		endY = p2.y;
-		CurY = p1.y;
-		CurX = p1.x;
-	}
-	else
-	{
-		endY = p1.y;
-		CurY = p2.y;
-		CurX = p2.x;
+		swap(P1, P2);
 	}
 
-	int32_t DeltaX = p1.x - p2.x;
-	uint16_t DeltaY = abs(p1.y - p2.y);
+	deltaY = P2->y - P1->y;
 
-	uint16_t CurXu = 0;
+	XperY = (float)(P1->x - P2->x) / -abs(deltaY);
+	curX_f = P1->x;
 
-	if (DeltaY != 0)
+	for (curY = P1->y; curY != P2->y; curY += deltaY / abs(deltaY))
 	{
-		Xmod = (float)DeltaX / (float)DeltaY;
-		do
+		curX_f += XperY;
+		for (curX = floor(curX_f); curX < (floor(curX_f) + XperY); curX++)
 		{
-			CurY++;
-			endX = CurX + Xmod;
-			do
+			if ((curX < imageBuff.width) && (curY < imageBuff.height))
 			{
-				CurXu = CurX;
-				if ((CurX < DepthBuffer.width) && (CurY < DepthBuffer.height))
-				{
-					DepthBuffer.PutPix(CurXu, CurY, col);
-				}
-				CurX += Xmod;
-			} while (CurX != endX && CurX >= 0);
-		} while (CurY < endY && CurY >= 0);
-	}
-	else
-	{
-		for (CurXu = CurX; CurXu != (CurX + DeltaX); CurXu += (abs(DeltaX) / DeltaX))
-		{
-			if ((CurX < DepthBuffer.width) && (CurY < DepthBuffer.height))
-			{
-				DepthBuffer.PutPix(CurXu, CurY, col);
+				imageBuff.PutPix(curX, curY, col);
 			}
 		}
 	}
@@ -1289,7 +1266,7 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 };
 
 
-void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff)
+void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff)
 {
 	triangle TransformedTri;
 	triangle ViewedTri;
@@ -1298,7 +1275,7 @@ void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff, Alpha_Dept
 	vec3D normal;
 	vec3D line1;
 	vec3D line2;
-	
+
 	matrix4x4 RotZMatrix = MakeZrotationMatrix(theta);
 
 	matrix4x4 RotXMatrix = MakeXrotationMatrix(0.0f);
@@ -1316,13 +1293,20 @@ void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff, Alpha_Dept
 	target = AddVectors(Graphics::camera.GlobalPos, lookDir);
 	matrix4x4 CamMatrix = MakePointAtMatrix(Graphics::camera.GlobalPos, target, Graphics::UpVec);
 
-
-	float temp = 0.1f;
-
-	vec3D tempVec = MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.z);
-
+	vec3D tempVec = MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.x);
 	Graphics::camera.GlobalPos = Graphics::AddVectors(Graphics::camera.GlobalPos, tempVec);
-	Graphics::camera.GlobalPos.x += Graphics::camera.LocalPosDelta.x;
+
+
+	target = { 1.0f, 0.0f, 0.0f };
+	lookDir = MatrixVectorMultiplication(target, CamRotYMatrix);
+	target = AddVectors(Graphics::camera.GlobalPos, lookDir);
+	CamMatrix = MakePointAtMatrix(Graphics::camera.GlobalPos, target, Graphics::UpVec);
+
+	tempVec = MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.z);
+	Graphics::camera.GlobalPos = Graphics::AddVectors(Graphics::camera.GlobalPos, tempVec);
+
+	//Graphics::camera.GlobalPos.x += Graphics::camera.LocalPosDelta.x;
+	Graphics::camera.GlobalPos.y += Graphics::camera.LocalPosDelta.y;
 
 	matrix4x4 ViewMatrix = MatrixInvertQuick(CamMatrix);
 
@@ -1385,7 +1369,7 @@ void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff, Alpha_Dept
 
 				float DotProduct = max(0.1f, Graphics::DotProduct(LightDirGlobal, normal));
 
-				ProjectedTri.color = { ClippedTri[n].color.r * DotProduct, ClippedTri[n].color.g * DotProduct, ClippedTri[n].color.b * DotProduct, ClippedTri[n].color.a};
+				ProjectedTri.color = { ClippedTri[n].color.r * DotProduct, ClippedTri[n].color.g * DotProduct, ClippedTri[n].color.b * DotProduct, ClippedTri[n].color.a };
 				//==========================================================================================================================
 
 				//Projection Matrix Multiplication
@@ -1393,11 +1377,23 @@ void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff, Alpha_Dept
 				ProjectedTri.vectors[0] = MatrixVectorMultiplication(ClippedTri[n].vectors[0], Graphics::ProjMatrix);
 				ProjectedTri.vectors[1] = MatrixVectorMultiplication(ClippedTri[n].vectors[1], Graphics::ProjMatrix);
 				ProjectedTri.vectors[2] = MatrixVectorMultiplication(ClippedTri[n].vectors[2], Graphics::ProjMatrix);
+				//==========================================================================================================================
 
 				ProjectedTri.texCoord[0] = ClippedTri[n].texCoord[0];
 				ProjectedTri.texCoord[1] = ClippedTri[n].texCoord[1];
 				ProjectedTri.texCoord[2] = ClippedTri[n].texCoord[2];
-				//==========================================================================================================================
+
+				ProjectedTri.texCoord[0].u = ProjectedTri.texCoord[0].u / ProjectedTri.vectors[0].w;
+				ProjectedTri.texCoord[1].u = ProjectedTri.texCoord[1].u / ProjectedTri.vectors[1].w;
+				ProjectedTri.texCoord[2].u = ProjectedTri.texCoord[2].u / ProjectedTri.vectors[2].w;
+
+				ProjectedTri.texCoord[0].v = ProjectedTri.texCoord[0].v / ProjectedTri.vectors[0].w;
+				ProjectedTri.texCoord[1].v = ProjectedTri.texCoord[1].v / ProjectedTri.vectors[1].w;
+				ProjectedTri.texCoord[2].v = ProjectedTri.texCoord[2].v / ProjectedTri.vectors[2].w;
+
+				ProjectedTri.texCoord[0].w = 1.0f / ProjectedTri.vectors[0].w;
+				ProjectedTri.texCoord[1].w = 1.0f / ProjectedTri.vectors[1].w;
+				ProjectedTri.texCoord[2].w = 1.0f / ProjectedTri.vectors[2].w;
 
 				ProjectedTri.vectors[0] = DivVector(ProjectedTri.vectors[0], ProjectedTri.vectors[0].w);
 				ProjectedTri.vectors[1] = DivVector(ProjectedTri.vectors[1], ProjectedTri.vectors[1].w);
@@ -1427,12 +1423,12 @@ void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff, Alpha_Dept
 		}
 	}
 
-	sort(TriangleToRasterVector.begin(), TriangleToRasterVector.end(), [](triangle& tri1, triangle& tri2)
+	/*sort(TriangleToRasterVector.begin(), TriangleToRasterVector.end(), [](triangle& tri1, triangle& tri2)
 		{
 			float z1 = (tri1.vectors[0].z, tri1.vectors[1].z, tri1.vectors[2].z) / 3.0f;
 			float z2 = (tri2.vectors[0].z, tri2.vectors[1].z, tri2.vectors[2].z) / 3.0f;
 			return z1 > z2;
-		});
+		});*/
 
 	for (auto& TriToRast : TriangleToRasterVector)
 	{
@@ -1452,26 +1448,26 @@ void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff, Alpha_Dept
 
 				switch (Case)
 				{
-					case 0:
-					{
-						TriAddCount = TrianglePlaneClip({ 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
-						break;
-					}
-					case 1:
-					{
-						TriAddCount = TrianglePlaneClip({ 0.0f, (float)Resolution.height - 1, 0.0f }, { 0.0f, -1.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
-						break;
-					}
-					case 2:
-					{
-						TriAddCount = TrianglePlaneClip({ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
-						break;
-					}
-					case 3:
-					{
-						TriAddCount = TrianglePlaneClip({ (float)Resolution.width - 1, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
-						break;
-					}
+				case 0:
+				{
+					TriAddCount = TrianglePlaneClip({ 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+					break;
+				}
+				case 1:
+				{
+					TriAddCount = TrianglePlaneClip({ 0.0f, (float)Resolution.height - 1, 0.0f }, { 0.0f, -1.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+					break;
+				}
+				case 2:
+				{
+					TriAddCount = TrianglePlaneClip({ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+					break;
+				}
+				case 3:
+				{
+					TriAddCount = TrianglePlaneClip({ (float)Resolution.width - 1, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+					break;
+				}
 				}
 
 				for (uint8_t w = 0; w < TriAddCount; w++)
@@ -1481,9 +1477,7 @@ void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff, Alpha_Dept
 		}
 		for (auto& Tri : TriangleList)
 		{
-			Color col = { 0,0,0,0 };
-			//DrawTriangle2(Tri, col, imageBuff);
-			DrawTriangle2filled(Tri, Tri.color, imageBuff, AlphaDepthBuff);
+			DrawTriangle2(Tri, color, imageBuff);
 		}
 	}
 	//==========================================================================================================================

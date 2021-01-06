@@ -163,8 +163,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 
 			//graphics->BeginDraw();
 			//graphics->DrawMesh(TestMesh, color, imageBuffer);
-			graphics->DrawMeshTextured(terrain, terrainBMP, imageBuffer, AlphaDepthBuffer);
-			graphics->DrawMeshTextured(Suzzane, SuzzaneBMP, imageBuffer, AlphaDepthBuffer);
+			//graphics->DrawMeshTextured(Suzzane, SuzzaneBMP, imageBuffer, AlphaDepthBuffer);
+			//graphics->DrawMeshTextured(terrain, terrainBMP, imageBuffer, AlphaDepthBuffer);
+			graphics->DrawMesh(terrain, color, imageBuffer);
+			graphics->DrawMesh(Suzzane, color, imageBuffer);
 
 			uint16_t w = imageBuffer.width / 2;
 			uint16_t h = imageBuffer.height / 2;
