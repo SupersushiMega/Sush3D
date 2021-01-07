@@ -420,9 +420,9 @@ Graphics::vec3D Graphics::MatrixVectorMultiplication(vec3D& inputVec, matrix4x4&
 Graphics::matrix4x4 Graphics::MatrixMatrixMultiplication(matrix4x4& matrix1, matrix4x4& matrix2)
 {
 	matrix4x4 matrix;
-	for (uint8_t x = 0; x < 4; x++)
+	for (uint8_t y = 0; y < 4; y++)
 	{
-		for (uint8_t y = 0; y < 4; y++)
+		for (uint8_t x = 0; x < 4; x++)
 		{
 			matrix.mat[y][x] = matrix1.mat[y][0] * matrix2.mat[0][x] + matrix1.mat[y][1] * matrix2.mat[1][x] + matrix1.mat[y][2] * matrix2.mat[2][x] + matrix1.mat[y][3] * matrix2.mat[3][x];
 		}
@@ -983,6 +983,8 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 	vec2D* tex1 = &Triangle.texCoord[1];
 	vec2D* tex2 = &Triangle.texCoord[2];
 
+	uint16_t failCount = 0;
+
 	//vector Sort by y value
 	//==========================================================================================================================
 	if (vec1->y < vec0->y)
@@ -1052,7 +1054,7 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 
 	if (dy1)
 	{
-		for (uint16_t y = vec0->y; y <= vec1->y; y++)
+		for (uint16_t y = vec0->y + 1; y <= vec1->y; y++)
 		{
 			int32_t xStart = (int32_t)vec0->x + (float)(y - vec0->y) * Xstep1;
 			int32_t xEnd = (int32_t)vec0->x + (float)(y - vec0->y) * Xstep2;
@@ -1091,8 +1093,12 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 				uint16_t temp1 = (uint16_t)((TextureU / TextureW) * (texture.MapResolution[0] - 1)) % texture.MapResolution[0];
 				uint16_t temp2 = (uint16_t)((TextureV / TextureW) * (texture.MapResolution[1] - 1)) % texture.MapResolution[1];
 
-				if ((TextureV < 1 && TextureV >= 0) && (TextureU < 1 && TextureU >= 0) && (x < imageBuff.width && x >= 0))
+				uint16_t y2 = y + 1;
+				uint16_t y3 = y - 1;
+
+				if ((TextureV < 1 && TextureV > 0) && (TextureU < 1 && TextureU > 0) && (x < imageBuff.width && x >= 0))
 				{
+					failCount = 0;
 					//AlphaDepthBuff.getAlpha(x, y) != 1
 					if (TextureW > AlphaDepthBuff.getDepth(x, y))
 					{
@@ -1106,6 +1112,27 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 						imageBuff.PutPix(x, y, color);
 						AlphaDepthBuff.putDepth(x, y, TextureW);
 						AlphaDepthBuff.putAlpha(x, y, color.a);
+						if (color.a == 1)
+						{
+							if (y2 < imageBuff.height)
+							{
+								if (TextureW > AlphaDepthBuff.getDepth(x, y2))
+								{
+									imageBuff.PutPix(x, y2, color);
+									AlphaDepthBuff.putDepth(x, y2, TextureW);
+									AlphaDepthBuff.putAlpha(x, y2, color.a);
+								}
+							}
+							if (y > 0 && TextureW)
+							{
+								if (TextureW > AlphaDepthBuff.getDepth(x, y3))
+								{
+									imageBuff.PutPix(x, y3, color);
+									AlphaDepthBuff.putDepth(x, y3, TextureW);
+									AlphaDepthBuff.putAlpha(x, y3, color.a);
+								}
+							}
+						}
 					}
 					else
 					{
@@ -1200,7 +1227,10 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 				uint16_t temp1 = (uint16_t)((TextureU / TextureW) * (texture.MapResolution[0] - 1)) % texture.MapResolution[0];
 				uint16_t temp2 = (uint16_t)((TextureV / TextureW) * (texture.MapResolution[1] - 1)) % texture.MapResolution[1];
 
-				if ((TextureV < 1 && TextureV >= 0) && (TextureU < 1 && TextureU >= 0) && (x < imageBuff.width && x >= 0))
+				uint16_t y2 = y + 1;
+				uint16_t y3 = y - 1;
+
+				if ((TextureV < 1 && TextureV > 0) && (TextureU < 1 && TextureU > 0) && (x < imageBuff.width && x >= 0))
 				{
 					//AlphaDepthBuff.getAlpha(x, y) != 1
 					if (TextureW > AlphaDepthBuff.getDepth(x, y))
@@ -1215,6 +1245,27 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 						imageBuff.PutPix(x, y, color);
 						AlphaDepthBuff.putDepth(x, y, TextureW);
 						AlphaDepthBuff.putAlpha(x, y, color.a);
+						if (color.a == 1)
+						{
+							if (y2 < imageBuff.height)
+							{
+								if (TextureW > AlphaDepthBuff.getDepth(x, y2))
+								{
+									imageBuff.PutPix(x, y2, color);
+									AlphaDepthBuff.putDepth(x, y2, TextureW);
+									AlphaDepthBuff.putAlpha(x, y2, color.a);
+								}
+							}
+							if (y > 0 && TextureW)
+							{
+								if (TextureW > AlphaDepthBuff.getDepth(x, y3))
+								{
+									imageBuff.PutPix(x, y3, color);
+									AlphaDepthBuff.putDepth(x, y3, TextureW);
+									AlphaDepthBuff.putAlpha(x, y3, color.a);
+								}
+							}
+						}
 					}
 					else
 					{

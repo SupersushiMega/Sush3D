@@ -157,7 +157,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 			Graphics::Color color = { 0.5f, 0.5f, 0.5f, 0.0f };
 
 
-			graphics->ClearScreen(0, 0, 0, imageBuffer, AlphaDepthBuffer);
+			graphics->ClearScreen(1, 1, 1, imageBuffer, AlphaDepthBuffer);
 			/*for (uint16_t Y = 0; Y < bitmap.Resolution[0]; Y++)
 			{
 				for (uint16_t X = 0; X < bitmap.Resolution[1]; X++)
@@ -175,6 +175,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 			graphics->DrawMeshTextured(Logo, LogoBMP, imageBuffer, AlphaDepthBuffer);
 			graphics->DrawMeshTextured(Suzzane, SuzzaneBMP, imageBuffer, AlphaDepthBuffer);
 			graphics->DrawMeshTextured(terrain, terrainBMP, imageBuffer, AlphaDepthBuffer);
+
+			//graphics->DrawMesh(Logo, color, imageBuffer);
+			//graphics->DrawMesh(Suzzane, color, imageBuffer);
+			//graphics->DrawMesh(terrain, color, imageBuffer);
 
 			uint16_t w = imageBuffer.width / 2;
 			uint16_t h = imageBuffer.height / 2;
