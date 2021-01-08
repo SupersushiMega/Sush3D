@@ -124,7 +124,7 @@ bool Graphics::Init(HWND windowHandle, uint16_t width, uint16_t height, float FO
 	return true;
 }
 
-bool Graphics::BitMap::LoadBitmapRGB(const char *filename, bool invert)
+bool Graphics::BitMap::LoadBitmapRGB(const char *filename)
 {
 	BITMAPFILEHEADER fileHeader;
 	BITMAPINFOHEADER infoHeader;
@@ -166,7 +166,6 @@ bool Graphics::BitMap::LoadBitmapRGB(const char *filename, bool invert)
 
 	Color tempCol;
 	vector<Color> TempVecX;
-	vector<vector<Color>> TempVecY;
 
 	for (uint16_t Y = 0; Y < infoHeader.biHeight; Y++)
 	{
@@ -181,22 +180,7 @@ bool Graphics::BitMap::LoadBitmapRGB(const char *filename, bool invert)
 			tempCol = { (float)tempRGB.r / 255.0f, (float)tempRGB.g / 255.0f, (float)tempRGB.b / 255.0f, 1.0f };
 			TempVecX.push_back(tempCol);
 		}
-		TempVecY.push_back(TempVecX);
-	}
-
-	if (invert)
-	{
-		for (uint16_t Y = 0; Y < infoHeader.biHeight; Y++)
-		{
-			Pixels.push_back(TempVecY[Y]);	//Invert Y of Image to make it upright
-		}
-	}
-	else
-	{
-		for (uint16_t Y = infoHeader.biHeight; Y > 0; Y--)
-		{
-			Pixels.push_back(TempVecY[Y - 1]);	//Invert Y of Image to make it upright
-		}
+		Pixels.push_back(TempVecX);
 	}
 
 	fclose(bitmap);
@@ -204,7 +188,7 @@ bool Graphics::BitMap::LoadBitmapRGB(const char *filename, bool invert)
 	return true;
 }
 
-bool Graphics::BitMap::LoadBitmapAlpha(const char* filename, bool invert)
+bool Graphics::BitMap::LoadBitmapAlpha(const char* filename)
 {
 	BITMAPFILEHEADER fileHeader;
 	BITMAPINFOHEADER infoHeader;
@@ -248,7 +232,6 @@ bool Graphics::BitMap::LoadBitmapAlpha(const char* filename, bool invert)
 
 	Color tempCol;
 	vector<Color> TempVecX;
-	vector<vector<Color>> TempVecY;
 
 	for (uint16_t Y = 0; Y < infoHeader.biHeight; Y++)
 	{
@@ -263,22 +246,7 @@ bool Graphics::BitMap::LoadBitmapAlpha(const char* filename, bool invert)
 			Pixels[Y][X].a = (float)Alpha / 255;
 			TempVecX.push_back(tempCol);
 		}
-		TempVecY.push_back(TempVecX);
-	}
-
-	if (invert)
-	{
-		for (uint16_t Y = 0; Y < infoHeader.biHeight; Y++)
-		{
-			Pixels.push_back(TempVecY[Y]);	//Invert Y of Image to make it upright
-		}
-	}
-	else
-	{
-		for (uint16_t Y = infoHeader.biHeight; Y > 0; Y--)
-		{
-			Pixels.push_back(TempVecY[Y - 1]);	//Invert Y of Image to make it upright
-		}
+		Pixels.push_back(TempVecX);
 	}
 
 	fclose(bitmap);
@@ -331,7 +299,7 @@ Graphics::Color Graphics::ImageBuff::GetPix(uint16_t& x, uint16_t& y)
 	return ColOut;
 }
 
-bool Graphics::mesh::LoadFromObj(string filename, bool hasTexture)
+bool Graphics::mesh::LoadFromObj(string filename)
 {
 	ifstream f(filename);
 	if (!f.is_open())
@@ -368,38 +336,26 @@ bool Graphics::mesh::LoadFromObj(string filename, bool hasTexture)
 			}
 		}
 
-		if (!hasTexture)
+		if (line[0] == 'f')
 		{
-			if (line[0] == 'f')
+			stream >> Waste;
+
+			string tokens[6];
+			int32_t nTokenCount = -1;
+
+
+			while (!stream.eof())
 			{
-				uint64_t face[3] = { 0 };
-				stream >> Waste >> face[0] >> face[1] >> face[2];
-				tri.push_back({ verts[face[0] - 1], verts[face[1] - 1] , verts[face[2] - 1] });
+				char c = stream.get();
+				if (c == ' ' || c == '/')
+					nTokenCount++;
+				else
+					tokens[nTokenCount].append(1, c);
 			}
-		}
-		else
-		{
-			if (line[0] == 'f')
-			{
-				stream >> Waste;
 
-				string tokens[6];
-				int32_t nTokenCount = -1;
+			tokens[nTokenCount].pop_back();
 
-
-				while (!stream.eof())
-				{
-					char c = stream.get();
-					if (c == ' ' || c == '/')
-						nTokenCount++;
-					else
-						tokens[nTokenCount].append(1, c);
-				}
-
-				tokens[nTokenCount].pop_back();
-
-				tri.push_back({ verts[stoi(tokens[0]) - 1], verts[stoi(tokens[2]) - 1], verts[stoi(tokens[4]) - 1], TexCoords[stoi(tokens[1]) - 1], TexCoords[stoi(tokens[3]) - 1], TexCoords[stoi(tokens[5]) - 1] });
-			}
+			tri.push_back({ verts[stoi(tokens[0]) - 1], verts[stoi(tokens[2]) - 1], verts[stoi(tokens[4]) - 1], TexCoords[stoi(tokens[1]) - 1], TexCoords[stoi(tokens[3]) - 1], TexCoords[stoi(tokens[5]) - 1] });
 		}
 	}
 
@@ -814,84 +770,6 @@ void Graphics::DrawLine(Point& p1, Point& p2, Color& col, ImageBuff& imageBuff)
 	}
 }
 
-void Graphics::DrawFlatTop(vec3D& point0, vec3D& point1, vec3D& point2, Color col, ImageBuff& imageBuff)
-{
-	//Calculate Slopes
-	//==========================================================================================================================
-	const float slope0 = (point2.x - point0.x) / (point2.y - point0.y);
-	const float slope1 = (point2.x - point1.x) / (point2.y - point1.y);
-	//==========================================================================================================================
-
-	//Calculate Start and End Y
-	//==========================================================================================================================
-	const int32_t StartY = (int16_t)ceil(point0.y - 0.5f);
-	const int32_t EndY = (int16_t)ceil(point2.y - 0.5f);
-	//==========================================================================================================================
-
-
-	for (uint16_t y = StartY; y < EndY; y++)
-	{
-		vec3D Start;
-		vec3D End;
-
-		Start.y = y;
-		End.y = y;
-
-		const float pointx0 = slope0 * (float(y) + 0.5f - point0.y) + point0.x;
-		const float pointx1 = slope1 * (float(y) + 0.5f - point1.y) + point1.x;
-
-		//Calculate Start and End X
-		//==========================================================================================================================
-		Start.x = (uint16_t)ceil(pointx0 - 0.05f);
-		End.x = (uint16_t)ceil(pointx1 - 0.05f);
-		//==========================================================================================================================
-		for (uint16_t x = Start.x; x < End.x; x++)
-		{
-			imageBuff.PutPix(x, y, col);
-		}
-		//rendertarget->DrawLine(D2D1::Point2F(Start.x, Start.y), D2D1::Point2F(End.x, End.y), Solidbrush, 2.0f);	//Draw Lines
-	}
-};
-
-void Graphics::DrawFlatBottom(vec3D& point0, vec3D& point1, vec3D& point2, Color col, ImageBuff& imageBuff)
-{
-	const float slope0 = (point1.x - point0.x) / (point1.y - point0.y);
-	const float slope1 = (point2.x - point0.x) / (point2.y - point0.y);
-
-	const int32_t StartY = (int16_t)ceil(point0.y - 0.5f);
-	const int32_t EndY = (int16_t)ceil(point2.y - 0.5f);
-
-	for (uint16_t y = StartY; y < EndY; y++)
-	{
-		vec3D Start;
-		vec3D End;
-
-		Start.y = y;
-		End.y = y;
-
-		const float pointx0 = slope0 * (float(y) + 0.5f - point0.y) + point0.x;
-		const float pointx1 = slope1 * (float(y) + 0.5f - point0.y) + point0.x;
-
-		Start.x = (uint16_t)ceil(pointx0 - 0.05f);
-		End.x = (uint16_t)ceil(pointx1 - 0.05f);
-
-		for (uint16_t x = Start.x; x < End.x; x++)
-		{
-			imageBuff.PutPix(x, y, col);
-		}
-		//rendertarget->DrawLine(D2D1::Point2F(Start.x, Start.y), D2D1::Point2F(End.x, End.y), Solidbrush, 2.0f);
-	}
-};
-
-void Graphics::DrawTriangle(uint16_t& x1, uint16_t& y1, uint16_t& x2, uint16_t& y2, uint16_t& x3, uint16_t& y3, uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& a, ImageBuff& imageBuff)
-{
-	Solidbrush->SetColor(D2D1::ColorF(r, g, b, a));
-	rendertarget->DrawLine(D2D1::Point2F(x1, y1), D2D1::Point2F(x2, y2), Solidbrush);
-	rendertarget->DrawLine(D2D1::Point2F(x2, y2), D2D1::Point2F(x3, y3), Solidbrush);
-	rendertarget->DrawLine(D2D1::Point2F(x3, y3), D2D1::Point2F(x1, y1), Solidbrush);
-};
-
-
 void Graphics::DrawTriangle2(triangle Triangle, Color color, ImageBuff& imageBuff)
 {
 	for (char i = 0; i < 3; i++)
@@ -902,75 +780,311 @@ void Graphics::DrawTriangle2(triangle Triangle, Color color, ImageBuff& imageBuf
 	}
 };
 
-
-void Graphics::DrawTriangle2filled(triangle &Triangle, Color &color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff)
+void Graphics::DrawTriangle2filled(triangle &Triangle, Color &col, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff)
 {
-	Solidbrush->SetColor(D2D1::ColorF(color.r, color.g, color.b, color.a));
-
 	vec3D* vec0 = &Triangle.vectors[0];
 	vec3D* vec1 = &Triangle.vectors[1];
 	vec3D* vec2 = &Triangle.vectors[2];
+
+	vec2D* tex0 = &Triangle.texCoord[0];
+	vec2D* tex1 = &Triangle.texCoord[1];
+	vec2D* tex2 = &Triangle.texCoord[2];
+
+	uint16_t failCount = 0;
+
+	Color color;
 
 	//vector Sort by y value
 	//==========================================================================================================================
 	if (vec1->y < vec0->y)
 	{
 		std::swap(vec0, vec1);
+		std::swap(tex0, tex1);
+	}
+	if (vec2->y < vec0->y)
+	{
+		std::swap(vec0, vec2);
+		std::swap(tex0, tex2);
 	}
 	if (vec2->y < vec1->y)
 	{
 		std::swap(vec1, vec2);
-	}
-	if (vec1->y < vec0->y)
-	{
-		std::swap(vec0, vec1);
+		std::swap(tex1, tex2);
 	}
 	//==========================================================================================================================
 
-	//Check for natural flattop or bottom or neither
-	//==========================================================================================================================
-	if (vec0->y == vec1->y)	//flattop
+	int32_t dy1 = (int32_t)vec1->y - (uint16_t)vec0->y;
+	int32_t dx1 = (int32_t)vec1->x - (uint16_t)vec0->x;
+
+	float dv1 = tex1->v - tex0->v;
+	float du1 = tex1->u - tex0->u;
+	float dw1 = tex1->w - tex0->w;
+
+
+	int32_t dy2 = vec2->y - vec0->y;
+	int32_t dx2 = vec2->x - vec0->x;
+
+	float dv2 = tex2->v - tex0->v;
+	float du2 = tex2->u - tex0->u;
+	float dw2 = tex2->w - tex0->w;
+
+	float Xstep1 = 0.0f;
+	float Xstep2 = 0.0f;
+
+	float Ustep1 = 0.0f;
+	float Ustep2 = 0.0f;
+
+	float Vstep1 = 0.0f;
+	float Vstep2 = 0.0f;
+
+	float Wstep1 = 0.0f;
+	float Wstep2 = 0.0f;
+
+	float TextureU = 0.0f;
+	float TextureV = 0.0f;
+	float TextureW = 0.0f;
+
+	if (dy1 != 0)
 	{
-		if (vec1->x < vec0->x)	//vector sort by x value
-		{
-			std::swap(vec0, vec1);
-		}
-		DrawFlatTop(*vec0, *vec1, *vec2, color, imageBuff);
+		Xstep1 = dx1 / (float)abs(dy1);
+		Ustep1 = du1 / (float)abs(dy1);
+		Vstep1 = dv1 / (float)abs(dy1);
+		Wstep1 = dw1 / (float)abs(dy1);
+	}
+	if (dy2 != 0)
+	{
+		Xstep2 = dx2 / (float)abs(dy2);
+		Ustep2 = du2 / (float)abs(dy2);
+		Vstep2 = dv2 / (float)abs(dy2);
+		Wstep2 = dw2 / (float)abs(dy2);
 	}
 
-	else if (vec1->y == vec2->y)	//flatbottom
+	if (dy1)
 	{
-		if (vec2->x < vec1->x)	//vector sort by x value
+		for (uint16_t y = vec0->y + 1; y <= vec1->y; y++)
 		{
-			std::swap(vec1, vec2);
+			int32_t xStart = (int32_t)vec0->x + (float)(y - vec0->y) * Xstep1;
+			int32_t xEnd = (int32_t)vec0->x + (float)(y - vec0->y) * Xstep2;
+
+			float uStart = tex0->u + (float)(y - vec0->y) * Ustep1;
+			float uEnd = tex0->u + (float)(y - vec0->y) * Ustep2;
+
+			float vStart = tex0->v + (float)(y - vec0->y) * Vstep1;
+			float vEnd = tex0->v + (float)(y - vec0->y) * Vstep2;
+
+			float wStart = tex0->w + (float)(y - vec0->y) * Wstep1;
+			float wEnd = tex0->w + (float)(y - vec0->y) * Wstep2;
+
+			if (xStart > xEnd)
+			{
+				std::swap(xStart, xEnd);
+				std::swap(uStart, uEnd);
+				std::swap(vStart, vEnd);
+				std::swap(wStart, wEnd);
+			}
+
+			TextureU = uStart;
+			TextureV = vStart;
+			TextureW = wStart;
+
+			float tStep = 1.0f / ((float)(xEnd - xStart));
+			float t = 0.0f;
+
+			for (uint16_t x = xStart; x <= xEnd; x++)
+			{
+				TextureU = (1.0f - t) * uStart + t * uEnd;
+				TextureV = (1.0f - t) * vStart + t * vEnd;
+				TextureW = (1.0f - t) * wStart + t * wEnd;
+
+				uint16_t y2 = y + 1;
+				uint16_t y3 = y - 1;
+
+				if ((TextureV < 1 && TextureV > 0) && (TextureU < 1 && TextureU > 0) && (x < imageBuff.width && x >= 0))
+				{
+					if (TextureW > AlphaDepthBuff.getDepth(x, y))
+					{
+						color = col;
+
+						//Calculate Color
+						//==========================================================================================================================
+						color.r = (color.r * color.a) + (imageBuff.GetPix(x, y).r * (1 - color.a));
+						color.g = (color.g * color.a) + (imageBuff.GetPix(x, y).g * (1 - color.a));
+						color.b = (color.b * color.a) + (imageBuff.GetPix(x, y).b * (1 - color.a));
+						//==========================================================================================================================
+
+						imageBuff.PutPix(x, y, color);
+						AlphaDepthBuff.putDepth(x, y, TextureW);
+						AlphaDepthBuff.putAlpha(x, y, color.a);
+						if (color.a == 1)
+						{
+							if (y2 < imageBuff.height)
+							{
+								if (TextureW > AlphaDepthBuff.getDepth(x, y2))
+								{
+									imageBuff.PutPix(x, y2, color);
+									AlphaDepthBuff.putDepth(x, y2, TextureW);
+									AlphaDepthBuff.putAlpha(x, y2, color.a);
+								}
+							}
+							if (y > 0 && TextureW)
+							{
+								if (TextureW > AlphaDepthBuff.getDepth(x, y3))
+								{
+									imageBuff.PutPix(x, y3, color);
+									AlphaDepthBuff.putDepth(x, y3, TextureW);
+									AlphaDepthBuff.putAlpha(x, y3, color.a);
+								}
+							}
+						}
+					}
+					else
+					{
+						if (AlphaDepthBuff.getAlpha(x, y) != 1)	//Draw behind seethrough pixel
+						{
+
+							//Calculate Color
+							//==========================================================================================================================
+							color.a = 1.0f - AlphaDepthBuff.getAlpha(x, y);
+
+							color.r = (color.r * color.a) + (imageBuff.GetPix(x, y).r * (1 - color.a));
+							color.g = (color.g * color.a) + (imageBuff.GetPix(x, y).g * (1 - color.a));
+							color.b = (color.b * color.a) + (imageBuff.GetPix(x, y).b * (1 - color.a));
+							//==========================================================================================================================
+
+							imageBuff.PutPix(x, y, color);
+						}
+					}
+				}
+				t += tStep;
+			}
 		}
-		DrawFlatBottom(*vec0, *vec1, *vec2, color, imageBuff);
+	}
+	dy1 = (uint16_t)vec2->y - (uint16_t)vec1->y;
+	dx1 = (uint16_t)vec2->x - (uint16_t)vec1->x;
+	du1 = tex2->u - tex1->u;
+	dv1 = tex2->v - tex1->v;
+	dw1 = tex2->w - tex1->w;
+
+	if (dy1)
+	{
+		Xstep1 = dx1 / (float)abs(dy1);
+	}
+	if (dy2)
+	{
+		Xstep2 = dx2 / (float)abs(dy2);
 	}
 
-	else //neither
+	if (dy1)
 	{
-		float alpha = ((vec1->y - vec0->y) / (vec2->y - vec0->y)); //spliting point
-
-		//Splitting vector
-		vec3D vecSplt;
-		vecSplt.x = vec0->x + (vec2->x - vec0->x) * alpha;
-		vecSplt.y = vec0->y + (vec2->y - vec0->y) * alpha;
-
-		if (vec1->x < vecSplt.x)	//check if triangle is major right
-		{
-			DrawFlatBottom(*vec0, *vec1, vecSplt, color, imageBuff);
-			DrawFlatTop(*vec1, vecSplt, *vec2, color, imageBuff);
-		}
-
-		else	//triangle is major left
-		{
-			DrawFlatBottom(*vec0, vecSplt, *vec1, color, imageBuff);
-			DrawFlatTop(vecSplt, *vec1, *vec2, color, imageBuff);
-		}
-
+		Ustep1 = du1 / (float)abs(dy1);
 	}
-	//==========================================================================================================================
+	if (dy1)
+	{
+		Vstep1 = dv1 / (float)abs(dy1);
+	}
+	if (dy1)
+	{
+		Wstep1 = dw1 / (float)abs(dy1);
+	}
+	if (dy1)
+	{
+		for (uint16_t y = vec1->y; y <= vec2->y; y++)
+		{
+			int32_t xStart = (uint16_t)vec1->x + (float)(y - (uint16_t)vec1->y) * Xstep1;
+			int32_t xEnd = (uint16_t)vec0->x + (float)(y - (uint16_t)vec0->y) * Xstep2;
 
+			float uStart = tex1->u + (float)(y - vec1->y) * Ustep1;
+			float uEnd = tex0->u + (float)(y - vec0->y) * Ustep2;
+
+			float vStart = tex1->v + (float)(y - vec1->y) * Vstep1;
+			float vEnd = tex0->v + (float)(y - vec0->y) * Vstep2;
+
+			float wStart = tex1->w + (float)(y - vec1->y) * Wstep1;
+			float wEnd = tex0->w + (float)(y - vec0->y) * Wstep2;
+
+			if (xStart > xEnd)
+			{
+				std::swap(xStart, xEnd);
+				std::swap(uStart, uEnd);
+				std::swap(vStart, vEnd);
+				std::swap(wStart, wEnd);
+			}
+
+			TextureU = uStart;
+			TextureV = vStart;
+			TextureW = wStart;
+
+			float tStep = 1.0f / ((float)(xEnd - xStart));
+			float t = 0.0f;
+
+			for (uint16_t x = xStart; x <= xEnd; x++)
+			{
+				TextureU = (1.0f - t) * uStart + t * uEnd;
+				TextureV = (1.0f - t) * vStart + t * vEnd;
+				TextureW = (1.0f - t) * wStart + t * wEnd;
+
+				uint16_t y2 = y + 1;
+				uint16_t y3 = y - 1;
+
+				if ((TextureV < 1 && TextureV > 0) && (TextureU < 1 && TextureU > 0) && (x < imageBuff.width && x >= 0))
+				{
+					color = col;
+					if (TextureW > AlphaDepthBuff.getDepth(x, y))
+					{
+						//Calculate Color
+						//==========================================================================================================================
+						color.r = (color.r * color.a) + (imageBuff.GetPix(x, y).r * (1 - color.a));
+						color.g = (color.g * color.a) + (imageBuff.GetPix(x, y).g * (1 - color.a));
+						color.b = (color.b * color.a) + (imageBuff.GetPix(x, y).b * (1 - color.a));
+						//==========================================================================================================================
+
+						imageBuff.PutPix(x, y, color);
+						AlphaDepthBuff.putDepth(x, y, TextureW);
+						AlphaDepthBuff.putAlpha(x, y, color.a);
+						if (color.a == 1)
+						{
+							if (y2 < imageBuff.height)
+							{
+								if (TextureW > AlphaDepthBuff.getDepth(x, y2))
+								{
+									imageBuff.PutPix(x, y2, color);
+									AlphaDepthBuff.putDepth(x, y2, TextureW);
+									AlphaDepthBuff.putAlpha(x, y2, color.a);
+								}
+							}
+							if (y > 0 && TextureW)
+							{
+								if (TextureW > AlphaDepthBuff.getDepth(x, y3))
+								{
+									imageBuff.PutPix(x, y3, color);
+									AlphaDepthBuff.putDepth(x, y3, TextureW);
+									AlphaDepthBuff.putAlpha(x, y3, color.a);
+								}
+							}
+						}
+					}
+					else
+					{
+						if (AlphaDepthBuff.getAlpha(x, y) != 1)	//Draw behind seethrough pixel
+						{
+							color = col;
+
+							//Calculate Color
+							//==========================================================================================================================
+							color.a = 1.0f - AlphaDepthBuff.getAlpha(x, y);
+
+							color.r = (color.r * color.a) + (imageBuff.GetPix(x, y).r * (1 - color.a));
+							color.g = (color.g * color.a) + (imageBuff.GetPix(x, y).g * (1 - color.a));
+							color.b = (color.b * color.a) + (imageBuff.GetPix(x, y).b * (1 - color.a));
+							//==========================================================================================================================
+							imageBuff.PutPix(x, y, color);
+						}
+					}
+				}
+				t += tStep;
+			}
+		}
+	}
 };
 
 void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff)
@@ -1090,24 +1204,22 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 				TextureW = (1.0f - t) * wStart + t * wEnd;
 				Color col = { 1.0f, 0.0f, 0.0f, };
 
-				uint16_t temp1 = (uint16_t)((TextureU / TextureW) * (texture.MapResolution[0] - 1)) % texture.MapResolution[0];
-				uint16_t temp2 = (uint16_t)((TextureV / TextureW) * (texture.MapResolution[1] - 1)) % texture.MapResolution[1];
-
 				uint16_t y2 = y + 1;
 				uint16_t y3 = y - 1;
 
 				if ((TextureV < 1 && TextureV > 0) && (TextureU < 1 && TextureU > 0) && (x < imageBuff.width && x >= 0))
 				{
 					failCount = 0;
-					//AlphaDepthBuff.getAlpha(x, y) != 1
 					if (TextureW > AlphaDepthBuff.getDepth(x, y))
 					{
-						//imageBuff.PutPix(temp1, temp2, col);
 						color = texture.Pixels[(uint16_t)((TextureV / TextureW) * (texture.MapResolution[1] - 1)) % texture.MapResolution[1]][(uint16_t)((TextureU / TextureW) * (texture.MapResolution[0] - 1)) % texture.MapResolution[0]];
 
+						//Calculate Color
+						//==========================================================================================================================
 						color.r = (color.r * color.a) + (imageBuff.GetPix(x, y).r * (1 - color.a));
 						color.g = (color.g * color.a) + (imageBuff.GetPix(x, y).g * (1 - color.a));
 						color.b = (color.b * color.a) + (imageBuff.GetPix(x, y).b * (1 - color.a));
+						//==========================================================================================================================
 
 						imageBuff.PutPix(x, y, color);
 						AlphaDepthBuff.putDepth(x, y, TextureW);
@@ -1136,21 +1248,20 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 					}
 					else
 					{
-						if (AlphaDepthBuff.getAlpha(x, y) != 1)
+						if (AlphaDepthBuff.getAlpha(x, y) != 1)	//Draw behind seethrough pixel
 						{
 							color = texture.Pixels[(uint16_t)((TextureV / TextureW) * (texture.MapResolution[1] - 1)) % texture.MapResolution[1]][(uint16_t)((TextureU / TextureW) * (texture.MapResolution[0] - 1)) % texture.MapResolution[0]];
+							
+							//Calculate Color
+							//==========================================================================================================================
 							color.a = 1.0f - AlphaDepthBuff.getAlpha(x, y);
-							//color.r = (imageBuff.GetPix(x, y).r * color.a) + (color.r * (1 - color.a));
-							//color.g = (imageBuff.GetPix(x, y).g * color.a) + (color.g * (1 - color.a));
-							//color.b = (imageBuff.GetPix(x, y).b * color.a) + (color.b * (1 - color.a));
 
 							color.r = (color.r * color.a) + (imageBuff.GetPix(x, y).r * (1 - color.a));
 							color.g = (color.g * color.a) + (imageBuff.GetPix(x, y).g * (1 - color.a));
 							color.b = (color.b * color.a) + (imageBuff.GetPix(x, y).b * (1 - color.a));
+							//==========================================================================================================================
 
 							imageBuff.PutPix(x, y, color);
-							//AlphaDepthBuff.putDepth(x, y, TextureW);
-							//AlphaDepthBuff.putAlpha(x, y, color.a);
 						}
 					}
 				}
@@ -1224,23 +1335,21 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 
 				Color col = { 0.0f, 1.0f, 0.0f, };
 
-				uint16_t temp1 = (uint16_t)((TextureU / TextureW) * (texture.MapResolution[0] - 1)) % texture.MapResolution[0];
-				uint16_t temp2 = (uint16_t)((TextureV / TextureW) * (texture.MapResolution[1] - 1)) % texture.MapResolution[1];
-
 				uint16_t y2 = y + 1;
 				uint16_t y3 = y - 1;
 
 				if ((TextureV < 1 && TextureV > 0) && (TextureU < 1 && TextureU > 0) && (x < imageBuff.width && x >= 0))
 				{
-					//AlphaDepthBuff.getAlpha(x, y) != 1
 					if (TextureW > AlphaDepthBuff.getDepth(x, y))
 					{
-						//imageBuff.PutPix(temp1, temp2, col);
 						color = texture.Pixels[(uint16_t)((TextureV / TextureW) * (texture.MapResolution[1] - 1)) % texture.MapResolution[1]][(uint16_t)((TextureU / TextureW) * (texture.MapResolution[0] - 1)) % texture.MapResolution[0]];
 
+						//Calculate Color
+						//==========================================================================================================================
 						color.r = (color.r * color.a) + (imageBuff.GetPix(x, y).r * (1 - color.a));
 						color.g = (color.g * color.a) + (imageBuff.GetPix(x, y).g * (1 - color.a));
 						color.b = (color.b * color.a) + (imageBuff.GetPix(x, y).b * (1 - color.a));
+						//==========================================================================================================================
 
 						imageBuff.PutPix(x, y, color);
 						AlphaDepthBuff.putDepth(x, y, TextureW);
@@ -1269,21 +1378,19 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 					}
 					else
 					{
-						if (AlphaDepthBuff.getAlpha(x, y) != 1)
+						if (AlphaDepthBuff.getAlpha(x, y) != 1)	//Draw behind seethrough pixel
 						{
 							color = texture.Pixels[(uint16_t)((TextureV / TextureW) * (texture.MapResolution[1] - 1)) % texture.MapResolution[1]][(uint16_t)((TextureU / TextureW) * (texture.MapResolution[0] - 1)) % texture.MapResolution[0]];
+							
+							//Calculate Color
+							//==========================================================================================================================
 							color.a = 1.0f - AlphaDepthBuff.getAlpha(x, y);
-							//color.r = (imageBuff.GetPix(x, y).r * color.a) + (color.r * (1 - color.a));
-							//color.g = (imageBuff.GetPix(x, y).g * color.a) + (color.g * (1 - color.a));
-							//color.b = (imageBuff.GetPix(x, y).b * color.a) + (color.b * (1 - color.a));
 
 							color.r = (color.r * color.a) + (imageBuff.GetPix(x, y).r * (1 - color.a));
 							color.g = (color.g * color.a) + (imageBuff.GetPix(x, y).g * (1 - color.a));
 							color.b = (color.b * color.a) + (imageBuff.GetPix(x, y).b * (1 - color.a));
-
+							//==========================================================================================================================
 							imageBuff.PutPix(x, y, color);
-							//AlphaDepthBuff.putDepth(x, y, TextureW);
-							//AlphaDepthBuff.putAlpha(x, y, color.a);
 						}
 					}
 				}
@@ -1292,6 +1399,7 @@ void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageB
 		}
 	}
 };
+
 
 
 void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff)
@@ -1506,6 +1614,224 @@ void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff)
 		for (auto& Tri : TriangleList)
 		{
 			DrawTriangle2(Tri, color, imageBuff);
+		}
+	}
+	//==========================================================================================================================
+};
+
+
+void Graphics::DrawMeshFilled(mesh mesh, Color color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff)
+{
+	triangle TransformedTri;
+	triangle ViewedTri;
+	triangle ProjectedTri;
+
+	vec3D normal;
+	vec3D line1;
+	vec3D line2;
+
+	matrix4x4 RotZMatrix = MakeZrotationMatrix(theta);
+
+	matrix4x4 RotXMatrix = MakeXrotationMatrix(0.0f);
+
+	matrix4x4 TransMatrix = MakeTranslationMatrix(mesh.WorldPos.x, mesh.WorldPos.z, mesh.WorldPos.y);
+
+	matrix4x4 WorldMatrix = MakeIdentityMarix();
+	WorldMatrix = MatrixMatrixMultiplication(RotZMatrix, RotXMatrix);
+	WorldMatrix = MatrixMatrixMultiplication(WorldMatrix, TransMatrix);
+
+	vec3D target = { 0.0f,0.0f,1.0f };
+
+	matrix4x4 CamRotYMatrix = MakeYrotationMatrix(camera.TargetRot.y);
+	vec3D lookDir = MatrixVectorMultiplication(target, CamRotYMatrix);
+	target = AddVectors(Graphics::camera.GlobalPos, lookDir);
+	matrix4x4 CamMatrix = MakePointAtMatrix(Graphics::camera.GlobalPos, target, Graphics::UpVec);
+
+	vec3D tempVec = MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.x);
+	Graphics::camera.GlobalPos = Graphics::AddVectors(Graphics::camera.GlobalPos, tempVec);
+
+
+	target = { 1.0f, 0.0f, 0.0f };
+	lookDir = MatrixVectorMultiplication(target, CamRotYMatrix);
+	target = AddVectors(Graphics::camera.GlobalPos, lookDir);
+	CamMatrix = MakePointAtMatrix(Graphics::camera.GlobalPos, target, Graphics::UpVec);
+
+	tempVec = MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.z);
+	Graphics::camera.GlobalPos = Graphics::AddVectors(Graphics::camera.GlobalPos, tempVec);
+
+	//Graphics::camera.GlobalPos.x += Graphics::camera.LocalPosDelta.x;
+	Graphics::camera.GlobalPos.y += Graphics::camera.LocalPosDelta.y;
+
+	matrix4x4 ViewMatrix = MatrixInvertQuick(CamMatrix);
+
+	vector<triangle> TriangleToRasterVector;
+
+	//Draw Triangles
+	//==========================================================================================================================
+	for (auto tri : mesh.tri)
+	{
+		TransformedTri.vectors[0] = MatrixVectorMultiplication(tri.vectors[0], WorldMatrix);
+		TransformedTri.vectors[1] = MatrixVectorMultiplication(tri.vectors[1], WorldMatrix);
+		TransformedTri.vectors[2] = MatrixVectorMultiplication(tri.vectors[2], WorldMatrix);
+
+		TransformedTri.texCoord[0] = tri.texCoord[0];
+		TransformedTri.texCoord[1] = tri.texCoord[1];
+		TransformedTri.texCoord[2] = tri.texCoord[2];
+
+		//Normal Calculation
+		//==========================================================================================================================
+		line1 = SubVectors(TransformedTri.vectors[1], TransformedTri.vectors[0]);
+		line2 = SubVectors(TransformedTri.vectors[2], TransformedTri.vectors[0]);
+
+		normal = CrossProd(line1, line2);
+
+		normal = Normalise(normal);
+		//==========================================================================================================================
+
+		vec3D CameraRay = SubVectors(TransformedTri.vectors[0], camera.GlobalPos);	//Get a ray from triangle to camera
+
+		if (DotProduct(normal, CameraRay) < 0.0f)
+		{
+			//World to viewspace
+			//==========================================================================================================================
+			ViewedTri.vectors[1] = MatrixVectorMultiplication(TransformedTri.vectors[1], ViewMatrix);
+			ViewedTri.vectors[0] = MatrixVectorMultiplication(TransformedTri.vectors[0], ViewMatrix);
+			ViewedTri.vectors[2] = MatrixVectorMultiplication(TransformedTri.vectors[2], ViewMatrix);
+
+			ViewedTri.texCoord[0] = TransformedTri.texCoord[0];
+			ViewedTri.texCoord[1] = TransformedTri.texCoord[1];
+			ViewedTri.texCoord[2] = TransformedTri.texCoord[2];
+
+			//==========================================================================================================================
+
+			//Clipping
+			//==========================================================================================================================
+			uint8_t ClippedTriCount = 0;
+			triangle ClippedTri[2];
+
+			ClippedTriCount = TrianglePlaneClip({ 0.0f, 0.0f, 0.1f }, { 0.0f, 0.0f, 1.0f }, ViewedTri, ClippedTri[0], ClippedTri[1]);
+			//==========================================================================================================================
+
+			for (uint8_t n = 0; n < ClippedTriCount; n++)
+			{
+
+				//lighting
+				//==========================================================================================================================
+				//Normalize light
+				vec3D LightDirGlobal = { Graphics::globalLight.Direction.x, Graphics::globalLight.Direction.y, Graphics::globalLight.Direction.z };
+				LightDirGlobal = Normalise(LightDirGlobal);
+
+				float DotProduct = max(0.1f, Graphics::DotProduct(LightDirGlobal, normal));
+
+				ProjectedTri.color = { ClippedTri[n].color.r * DotProduct, ClippedTri[n].color.g * DotProduct, ClippedTri[n].color.b * DotProduct, ClippedTri[n].color.a };
+				//==========================================================================================================================
+
+				//Projection Matrix Multiplication
+				//==========================================================================================================================
+				ProjectedTri.vectors[0] = MatrixVectorMultiplication(ClippedTri[n].vectors[0], Graphics::ProjMatrix);
+				ProjectedTri.vectors[1] = MatrixVectorMultiplication(ClippedTri[n].vectors[1], Graphics::ProjMatrix);
+				ProjectedTri.vectors[2] = MatrixVectorMultiplication(ClippedTri[n].vectors[2], Graphics::ProjMatrix);
+				//==========================================================================================================================
+
+				ProjectedTri.texCoord[0] = ClippedTri[n].texCoord[0];
+				ProjectedTri.texCoord[1] = ClippedTri[n].texCoord[1];
+				ProjectedTri.texCoord[2] = ClippedTri[n].texCoord[2];
+
+				ProjectedTri.texCoord[0].u = ProjectedTri.texCoord[0].u / ProjectedTri.vectors[0].w;
+				ProjectedTri.texCoord[1].u = ProjectedTri.texCoord[1].u / ProjectedTri.vectors[1].w;
+				ProjectedTri.texCoord[2].u = ProjectedTri.texCoord[2].u / ProjectedTri.vectors[2].w;
+
+				ProjectedTri.texCoord[0].v = ProjectedTri.texCoord[0].v / ProjectedTri.vectors[0].w;
+				ProjectedTri.texCoord[1].v = ProjectedTri.texCoord[1].v / ProjectedTri.vectors[1].w;
+				ProjectedTri.texCoord[2].v = ProjectedTri.texCoord[2].v / ProjectedTri.vectors[2].w;
+
+				ProjectedTri.texCoord[0].w = 1.0f / ProjectedTri.vectors[0].w;
+				ProjectedTri.texCoord[1].w = 1.0f / ProjectedTri.vectors[1].w;
+				ProjectedTri.texCoord[2].w = 1.0f / ProjectedTri.vectors[2].w;
+
+				ProjectedTri.vectors[0] = DivVector(ProjectedTri.vectors[0], ProjectedTri.vectors[0].w);
+				ProjectedTri.vectors[1] = DivVector(ProjectedTri.vectors[1], ProjectedTri.vectors[1].w);
+				ProjectedTri.vectors[2] = DivVector(ProjectedTri.vectors[2], ProjectedTri.vectors[2].w);
+
+				//Scaling
+				//==========================================================================================================================
+				vec3D ViewOffset = { 1.0f, 1.0f, 0.0f };
+
+				ProjectedTri.vectors[0] = AddVectors(ProjectedTri.vectors[0], ViewOffset);
+				ProjectedTri.vectors[1] = AddVectors(ProjectedTri.vectors[1], ViewOffset);
+				ProjectedTri.vectors[2] = AddVectors(ProjectedTri.vectors[2], ViewOffset);
+
+				ProjectedTri.vectors[0].x *= 0.5f * (float)Graphics::Resolution.width;
+				ProjectedTri.vectors[0].y *= 0.5f * (float)Graphics::Resolution.height;
+
+				ProjectedTri.vectors[1].x *= 0.5f * (float)Graphics::Resolution.width;
+				ProjectedTri.vectors[1].y *= 0.5f * (float)Graphics::Resolution.height;
+
+				ProjectedTri.vectors[2].x *= 0.5f * (float)Graphics::Resolution.width;
+				ProjectedTri.vectors[2].y *= 0.5f * (float)Graphics::Resolution.height;
+				//==========================================================================================================================
+
+				TriangleToRasterVector.push_back(ProjectedTri);
+				//DrawTriangle2filled(ProjectedTri, color, Buffer);
+			}
+		}
+	}
+
+	/*sort(TriangleToRasterVector.begin(), TriangleToRasterVector.end(), [](triangle& tri1, triangle& tri2)
+		{
+			float z1 = (tri1.vectors[0].z, tri1.vectors[1].z, tri1.vectors[2].z) / 3.0f;
+			float z2 = (tri2.vectors[0].z, tri2.vectors[1].z, tri2.vectors[2].z) / 3.0f;
+			return z1 > z2;
+		});*/
+
+	for (auto& TriToRast : TriangleToRasterVector)
+	{
+		triangle clippedTri[2];
+		list<triangle> TriangleList;
+		TriangleList.push_back(TriToRast);
+		uint8_t newTriCount = 1;
+		uint8_t TriAddCount = 0;
+
+		for (uint8_t Case = 0; Case < 4; Case++)
+		{
+			while (newTriCount > 0)
+			{
+				triangle testTri = TriangleList.front();
+				TriangleList.pop_front();
+				newTriCount--;
+
+				switch (Case)
+				{
+				case 0:
+				{
+					TriAddCount = TrianglePlaneClip({ 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+					break;
+				}
+				case 1:
+				{
+					TriAddCount = TrianglePlaneClip({ 0.0f, (float)Resolution.height - 1, 0.0f }, { 0.0f, -1.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+					break;
+				}
+				case 2:
+				{
+					TriAddCount = TrianglePlaneClip({ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+					break;
+				}
+				case 3:
+				{
+					TriAddCount = TrianglePlaneClip({ (float)Resolution.width - 1, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+					break;
+				}
+				}
+
+				for (uint8_t w = 0; w < TriAddCount; w++)
+					TriangleList.push_back(clippedTri[w]);
+			}
+			newTriCount = TriangleList.size();
+		}
+		for (auto& Tri : TriangleList)
+		{
+			DrawTriangle2filled(Tri, color, imageBuff, AlphaDepthBuff);
 		}
 	}
 	//==========================================================================================================================

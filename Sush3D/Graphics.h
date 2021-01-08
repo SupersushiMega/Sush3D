@@ -5,6 +5,7 @@
 Made by SupersushiMega with help of javidx9 code-It-Yourself 3D Graphics Engine youtube series
 
 Textures must be in a 24Bit Bitmap format (Bitmaps of textures made with blenders material editor must have the principled shader node before matrial output node)
+
 */
 
 #include <Windows.h>
@@ -116,7 +117,7 @@ public:
 
 		vec3D WorldPos = { 0.0f,0.0f, 0.0f };
 		
-		bool LoadFromObj(string filename, bool hasTexture = false);
+		bool LoadFromObj(string filename);	//Load 3D modell from OBJ file. Must have UV data
 	};
 
 	struct GlobalLight
@@ -139,9 +140,9 @@ public:
 		uint32_t MapResolution[2];
 		vector<vector<Color>> Pixels;
 
-		bool LoadBitmapRGB(const char* filename, bool invert = false);	//Load RGB Bitmap for RGB values
+		bool LoadBitmapRGB(const char* filename);	//Load RGB Bitmap for RGB values
 
-		bool LoadBitmapAlpha(const char* filename, bool invert = false);	//Load BW Bitmap for Alpha values (Has to be equal in size to RGB equivalent)	(if now Alpha map has been loaded all Alpha is set to max(Not see through))
+		bool LoadBitmapAlpha(const char* filename);	//Load BW Bitmap for Alpha values (Has to be equal in size to RGB equivalent)	(if now Alpha map has been loaded all Alpha is set to max(Not see through))
 	};
 
 	struct resolution
@@ -192,10 +193,6 @@ public:
 
 	//Draw functions
 	//==========================================================================================================================
-private:
-	void DrawFlatTop(vec3D& point0, vec3D& point1, vec3D& point2, Color col, ImageBuff& Buffer);	//draw triangle with flattop
-	void DrawFlatBottom(vec3D& point0, vec3D& point1, vec3D& point2, Color col, ImageBuff& Buffer);	//draw triangle with flatbottom
-
 public:
 	void BeginDraw()
 	{
@@ -210,11 +207,11 @@ public:
 	void ClearScreen(float r, float g, float b, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 	void DrawPixel(uint16_t&x, uint16_t&y, Color &col, ImageBuff& imageBuff);
 	void DrawLine(Point& p1, Point& p2, Color& col, ImageBuff& imageBuff);
-	void DrawTriangle(uint16_t& x1, uint16_t& y1, uint16_t& x2, uint16_t& y2, uint16_t& x3, uint16_t& y3, uint16_t& r, uint16_t& g, uint16_t& b, uint16_t& a, ImageBuff& imageBuff);
 	void DrawTriangle2(triangle Triangle, Color color, ImageBuff& imageBuff);
 	void DrawTriangle2filled(triangle &Triangle, Color &color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 	void DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 	void DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff);
+	void DrawMeshFilled(mesh mesh, Color color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 	void DrawMeshTextured(mesh mesh, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 
 	void refresh(ImageBuff& imageBuff);
