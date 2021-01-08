@@ -1626,7 +1626,7 @@ void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff)
 		}
 		for (auto& Tri : TriangleList)
 		{
-			DrawTriangle2(Tri, color, imageBuff);
+			DrawTriangle(Tri, color, imageBuff);
 		}
 	}
 	//==========================================================================================================================
@@ -1844,7 +1844,7 @@ void Graphics::DrawMeshFilled(mesh mesh, Color color, ImageBuff& imageBuff, Alph
 		}
 		for (auto& Tri : TriangleList)
 		{
-			DrawTriangle2filled(Tri, color, imageBuff, AlphaDepthBuff);
+			DrawTrianglefilled(Tri, color, imageBuff, AlphaDepthBuff);
 		}
 	}
 	//==========================================================================================================================
@@ -2063,7 +2063,7 @@ void Graphics::DrawMeshTextured(mesh mesh, BitMap& texture, ImageBuff& imageBuff
 		{
 			Color col = { 0,0,0,0 };
 			//DrawTriangle2filled(Tri, Tri.color, imageBuff, AlphaDepthBuff);
-			DrawTriangle2textured(Tri, texture, imageBuff, AlphaDepthBuff);
+			DrawTriangletextured(Tri, texture, imageBuff, AlphaDepthBuff);
 			
 		}
 	}
