@@ -207,9 +207,9 @@ public:
 	void ClearScreen(float r, float g, float b, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 	void DrawPixel(uint16_t&x, uint16_t&y, Color &col, ImageBuff& imageBuff);
 	void DrawLine(Point& p1, Point& p2, Color& col, ImageBuff& imageBuff);
-	void DrawTriangle2(triangle Triangle, Color color, ImageBuff& imageBuff);
-	void DrawTriangle2filled(triangle &Triangle, Color &color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
-	void DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
+	void DrawTriangle(triangle Triangle, Color color, ImageBuff& imageBuff);
+	void DrawTrianglefilled(triangle &Triangle, Color &color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
+	void DrawTriangletextured(triangle& Triangle, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 	void DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff);
 	void DrawMeshFilled(mesh mesh, Color color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 	void DrawMeshTextured(mesh mesh, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);

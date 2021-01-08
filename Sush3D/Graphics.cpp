@@ -757,20 +757,33 @@ void Graphics::DrawLine(Point& p1, Point& p2, Color& col, ImageBuff& imageBuff)
 	XperY = (float)(P1->x - P2->x) / -abs(deltaY);
 	curX_f = P1->x;
 
-	for (curY = P1->y; curY != P2->y; curY += deltaY / abs(deltaY))
+	curY = P1->y;
+
+	do
 	{
-		curX_f += XperY;
-		for (curX = floor(curX_f); curX < (floor(curX_f) + XperY); curX++)
+		if (deltaY)
 		{
+			curY += deltaY / abs(deltaY);
+		}
+
+		curX = floor(curX_f);
+
+		do
+		{
+			curX++;
 			if ((curX < imageBuff.width) && (curY < imageBuff.height))
 			{
 				imageBuff.PutPix(curX, curY, col);
 			}
-		}
-	}
+		}while (curX < (floor(curX_f) + XperY));
+
+		curX_f += XperY;
+
+	} while (curY != P2->y);
+
 }
 
-void Graphics::DrawTriangle2(triangle Triangle, Color color, ImageBuff& imageBuff)
+void Graphics::DrawTriangle(triangle Triangle, Color color, ImageBuff& imageBuff)
 {
 	for (char i = 0; i < 3; i++)
 	{
@@ -780,7 +793,7 @@ void Graphics::DrawTriangle2(triangle Triangle, Color color, ImageBuff& imageBuf
 	}
 };
 
-void Graphics::DrawTriangle2filled(triangle &Triangle, Color &col, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff)
+void Graphics::DrawTrianglefilled(triangle &Triangle, Color &col, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff)
 {
 	vec3D* vec0 = &Triangle.vectors[0];
 	vec3D* vec1 = &Triangle.vectors[1];
@@ -1087,7 +1100,7 @@ void Graphics::DrawTriangle2filled(triangle &Triangle, Color &col, ImageBuff& im
 	}
 };
 
-void Graphics::DrawTriangle2textured(triangle& Triangle, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff)
+void Graphics::DrawTriangletextured(triangle& Triangle, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff)
 {
 	vec3D* vec0 = &Triangle.vectors[0];
 	vec3D* vec1 = &Triangle.vectors[1];
@@ -2054,10 +2067,6 @@ void Graphics::DrawMeshTextured(mesh mesh, BitMap& texture, ImageBuff& imageBuff
 			
 		}
 	}
-	Color col = { 0,1,0,1 };
-	uint16_t w = imageBuff.width / 2;
-	uint16_t h = imageBuff.height / 2;
-	imageBuff.PutPix(w, h, col);
 	//==========================================================================================================================
 };
 
