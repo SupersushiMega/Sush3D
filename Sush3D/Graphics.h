@@ -141,9 +141,9 @@ public:
 		uint32_t MapResolution[2];
 		vector<vector<Color>> Pixels;
 
-		bool LoadBitmapRGB(const char* filename);	//Load RGB Bitmap for RGB values
+		bool LoadBitmapRGB(const char* filename);	//Load 24bit Bitmap for RGB values
 
-		bool LoadBitmapAlpha(const char* filename);	//Load BW Bitmap for Alpha values (Has to be equal in size to RGB equivalent)	(if now Alpha map has been loaded all Alpha is set to max(Not see through))
+		bool LoadBitmapAlpha(const char* filename);	//Load 24bit Bitmap for Alpha values. The alpha value will be the average of the R, G and B values. (Has to be equal in size to RGB equivalent)	(if no Alpha map has been loaded all Alpha is set to max(Not see through))
 	};
 
 	struct resolution
@@ -194,7 +194,7 @@ public:
 
 	//Draw functions
 	//==========================================================================================================================
-public:
+private:
 	void BeginDraw()
 	{
 		rendertarget->BeginDraw();
@@ -204,17 +204,25 @@ public:
 	{
 		rendertarget->EndDraw();
 	}
+	
+	void DrawTriangletextured(triangle& Triangle, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 
-	void ClearScreen(float r, float g, float b, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
+public:
+
+	//2D:
 	void DrawPixel(uint16_t&x, uint16_t&y, Color &col, ImageBuff& imageBuff);
 	void DrawLine(Point& p1, Point& p2, Color& col, ImageBuff& imageBuff);
 	void DrawTriangle(triangle Triangle, Color color, ImageBuff& imageBuff);
 	void DrawTrianglefilled(triangle &Triangle, Color &color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
-	void DrawTriangletextured(triangle& Triangle, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
+	void DrawBMP(BitMap& bmp, uint16_t StartX, uint16_t StartY, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
+	
+	//3D:
 	void DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff);
 	void DrawMeshFilled(mesh mesh, Color color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 	void DrawMeshTextured(mesh mesh, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 
+
+	void ClearScreen(float r, float g, float b, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 	void refresh(ImageBuff& imageBuff);
 	//==========================================================================================================================
 

@@ -94,6 +94,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 	Graphics::BitMap LogoBMP;
 	LogoBMP.LoadBitmapRGB("Sush3DLogo_RGB.bmp");
 
+	Graphics::BitMap BMPDrawTest;
+	BMPDrawTest.LoadBitmapRGB("BMPDrawTest.bmp");
+	BMPDrawTest.LoadBitmapAlpha("BMPDrawTestAlpha.bmp");
+
 	uint8_t frame = 0;
 	while (!closeWindow)
 	{
@@ -175,15 +179,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 			
 			graphics->DrawMeshTextured(Logo, LogoBMP, imageBuffer, AlphaDepthBuffer);
 			//graphics->DrawMesh(Logo, color, imageBuffer);
-			graphics->DrawMeshFilled(Suzzane, color, imageBuffer, AlphaDepthBuffer);
+			//graphics->DrawMeshFilled(Suzzane, color, imageBuffer, AlphaDepthBuffer);
+			graphics->DrawMeshTextured(Suzzane, SuzzaneBMP, imageBuffer, AlphaDepthBuffer);
 			graphics->DrawMeshTextured(terrain, terrainBMP, imageBuffer, AlphaDepthBuffer);
+			graphics->DrawBMP(BMPDrawTest, 600, 780, imageBuffer, AlphaDepthBuffer);
 
 			//graphics->DrawMesh(Logo, color, imageBuffer);
 			//graphics->DrawMesh(Suzzane, color, imageBuffer);
 			//graphics->DrawMesh(terrain, color, imageBuffer);
-
-			uint16_t w = imageBuffer.width / 2;
-			uint16_t h = imageBuffer.height / 2;
 
 			//graphics->DrawMeshTextured(TestMesh, bitmap, imageBuffer, AlphaDepthBuffer);
 			//graphics->EndDraw();

@@ -222,31 +222,23 @@ bool Graphics::BitMap::LoadBitmapAlpha(const char* filename)
 
 	uint64_t size = infoHeader.biWidth * infoHeader.biHeight;
 
-	PixPoint = new unsigned char[size];
+	PixPoint = new unsigned char[size * 3];
 
 	fseek(bitmap, fileHeader.bfOffBits, 0);
 
-	uint8_t Alpha;
-
-	uint8_t sizeAlpha = sizeof(Alpha);
+	uint16_t sizeRGB = sizeof(TempRGB);
 
 	Color tempCol;
 	vector<Color> TempVecX;
 
-	for (uint16_t Y = 0; Y < infoHeader.biHeight; Y++)
+	for (uint16_t Y = 0; Y < MapResolution[1]; Y++)
 	{
 		TempVecX.clear();
-		for (uint16_t X = 0; X < infoHeader.biWidth; X++)
+		for (uint16_t X = 0; X < MapResolution[0]; X++)
 		{
-			fread(&Alpha, sizeAlpha, 1, bitmap);
-			if (tempRGB.r == 0.0f && tempRGB.g == 0 && tempRGB.b == 0)
-			{
-				while (0);
-			}
-			Pixels[Y][X].a = (float)Alpha / 255;
-			TempVecX.push_back(tempCol);
+			fread(&tempRGB, sizeRGB, 1, bitmap);
+			Pixels[Y][X].a = ((float)((tempRGB.r + tempRGB.g + tempRGB.b) / 3) / 255);	//calculate average of RGB values and set alpha value equal to it
 		}
-		Pixels.push_back(TempVecX);
 	}
 
 	fclose(bitmap);
@@ -1413,7 +1405,52 @@ void Graphics::DrawTriangletextured(triangle& Triangle, BitMap& texture, ImageBu
 	}
 };
 
+void Graphics::DrawBMP(BitMap& bmp, uint16_t StartX, uint16_t StartY, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff)
+{
+	uint16_t x = 0;	//x position on Bitmap
+	uint16_t y = 0; //y position on Bitmap
 
+	uint16_t winX = 0;	//x position in window
+	uint16_t winY = 0;	//y position in window
+
+	Color color;
+
+	for (y = 0; (y < bmp.MapResolution[1]) && ((y + StartY) < imageBuff.height); y++)
+	{
+		for (x = 0;( x < bmp.MapResolution[0]) && ((x + StartX) < imageBuff.width); x++)
+		{
+			winX = x + StartX;	//Offset x
+			winY = y + StartY;	//Offset y
+
+			if (AlphaDepthBuff.getAlpha(winX, winY) != 1)	//Draw behind seethrough pixel
+			{
+
+				color = bmp.Pixels[y][x];
+
+				//Calculate Color
+				//==========================================================================================================================
+				color.r = (color.r * color.a) + (imageBuff.GetPix(winX, winY).r * (1 - color.a));
+				color.g = (color.g * color.a) + (imageBuff.GetPix(winX, winY).g * (1 - color.a));
+				color.b = (color.b * color.a) + (imageBuff.GetPix(winX, winY).b * (1 - color.a));
+				//==========================================================================================================================
+				imageBuff.PutPix(winX, winY, color);	//DrawPixel
+			}
+			else
+			{
+
+				color = bmp.Pixels[y][x];
+
+				//Calculate Color
+				//==========================================================================================================================
+				color.r = (color.r * color.a) + (imageBuff.GetPix(winX, winY).r * (1 - color.a));
+				color.g = (color.g * color.a) + (imageBuff.GetPix(winX, winY).g * (1 - color.a));
+				color.b = (color.b * color.a) + (imageBuff.GetPix(winX, winY).b * (1 - color.a));
+				//==========================================================================================================================
+				imageBuff.PutPix(winX, winY, color);	//DrawPixel
+			}
+		}
+	}
+}
 
 void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff)
 {
