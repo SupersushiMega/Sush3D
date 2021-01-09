@@ -153,6 +153,8 @@
     <ResourceCompile Include="Resource.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="..\resources\icon2.ico" />
+    <Image Include="..\Resources\ICONlarge.ico" />
     <Image Include="..\Resources\ICONmedium.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

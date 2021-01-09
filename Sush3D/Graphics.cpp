@@ -1425,15 +1425,20 @@ void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff)
 	vec3D line1;
 	vec3D line2;
 
-	matrix4x4 RotZMatrix = MakeZrotationMatrix(theta);
-
-	matrix4x4 RotXMatrix = MakeXrotationMatrix(0.0f);
+	//Mesh Rotation
+	//==========================================================================================================================	
+	matrix4x4 RotXMatrix = MakeXrotationMatrix(mesh.rotation.x);
+	matrix4x4 RotYMatrix = MakeYrotationMatrix(mesh.rotation.y);
+	matrix4x4 RotZMatrix = MakeZrotationMatrix(mesh.rotation.z);
 
 	matrix4x4 TransMatrix = MakeTranslationMatrix(mesh.WorldPos.x, mesh.WorldPos.z, mesh.WorldPos.y);
 
 	matrix4x4 WorldMatrix = MakeIdentityMarix();
+	
 	WorldMatrix = MatrixMatrixMultiplication(RotZMatrix, RotXMatrix);
+	WorldMatrix = MatrixMatrixMultiplication(WorldMatrix, RotYMatrix);
 	WorldMatrix = MatrixMatrixMultiplication(WorldMatrix, TransMatrix);
+	//==========================================================================================================================
 
 	vec3D target = { 0.0f,0.0f,1.0f };
 
@@ -1643,15 +1648,20 @@ void Graphics::DrawMeshFilled(mesh mesh, Color color, ImageBuff& imageBuff, Alph
 	vec3D line1;
 	vec3D line2;
 
-	matrix4x4 RotZMatrix = MakeZrotationMatrix(theta);
-
-	matrix4x4 RotXMatrix = MakeXrotationMatrix(0.0f);
+	//Mesh Rotation
+	//==========================================================================================================================	
+	matrix4x4 RotXMatrix = MakeXrotationMatrix(mesh.rotation.x);
+	matrix4x4 RotYMatrix = MakeYrotationMatrix(mesh.rotation.y);
+	matrix4x4 RotZMatrix = MakeZrotationMatrix(mesh.rotation.z);
 
 	matrix4x4 TransMatrix = MakeTranslationMatrix(mesh.WorldPos.x, mesh.WorldPos.z, mesh.WorldPos.y);
 
 	matrix4x4 WorldMatrix = MakeIdentityMarix();
+
 	WorldMatrix = MatrixMatrixMultiplication(RotZMatrix, RotXMatrix);
+	WorldMatrix = MatrixMatrixMultiplication(WorldMatrix, RotYMatrix);
 	WorldMatrix = MatrixMatrixMultiplication(WorldMatrix, TransMatrix);
+	//==========================================================================================================================
 
 	vec3D target = { 0.0f,0.0f,1.0f };
 
@@ -1860,15 +1870,20 @@ void Graphics::DrawMeshTextured(mesh mesh, BitMap& texture, ImageBuff& imageBuff
 	vec3D line1;
 	vec3D line2;
 
-	matrix4x4 RotZMatrix = MakeZrotationMatrix(theta);
-
-	matrix4x4 RotXMatrix = MakeXrotationMatrix(0.0f);
+	//Mesh Rotation
+	//==========================================================================================================================	
+	matrix4x4 RotXMatrix = MakeXrotationMatrix(mesh.rotation.x);
+	matrix4x4 RotYMatrix = MakeYrotationMatrix(mesh.rotation.y);
+	matrix4x4 RotZMatrix = MakeZrotationMatrix(mesh.rotation.z);
 
 	matrix4x4 TransMatrix = MakeTranslationMatrix(mesh.WorldPos.x, mesh.WorldPos.z, mesh.WorldPos.y);
 
 	matrix4x4 WorldMatrix = MakeIdentityMarix();
+
 	WorldMatrix = MatrixMatrixMultiplication(RotZMatrix, RotXMatrix);
+	WorldMatrix = MatrixMatrixMultiplication(WorldMatrix, RotYMatrix);
 	WorldMatrix = MatrixMatrixMultiplication(WorldMatrix, TransMatrix);
+	//==========================================================================================================================
 
 	vec3D target = { 0.0f,0.0f,1.0f };
 

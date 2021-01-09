@@ -171,9 +171,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 			//graphics->BeginDraw();
 			//graphics->DrawMesh(TestMesh, color, imageBuffer);
 
+			Logo.rotation.y += 0.01f;
 			
 			graphics->DrawMeshTextured(Logo, LogoBMP, imageBuffer, AlphaDepthBuffer);
-			graphics->DrawMesh(Logo, color, imageBuffer);
+			//graphics->DrawMesh(Logo, color, imageBuffer);
 			graphics->DrawMeshFilled(Suzzane, color, imageBuffer, AlphaDepthBuffer);
 			graphics->DrawMeshTextured(terrain, terrainBMP, imageBuffer, AlphaDepthBuffer);
 

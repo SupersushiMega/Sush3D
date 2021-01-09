@@ -115,7 +115,8 @@ public:
 	{
 		vector<triangle> tri;
 
-		vec3D WorldPos = { 0.0f,0.0f, 0.0f };
+		vec3D WorldPos = { 0.0f, 0.0f, 0.0f };
+		vec3D rotation = { 0.0f, 0.0f, 0.0f };
 		
 		bool LoadFromObj(string filename);	//Load 3D modell from OBJ file. Must have UV data
 	};

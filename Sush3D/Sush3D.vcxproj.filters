@@ -39,5 +39,11 @@
     <Image Include="..\Resources\ICONmedium.ico">
       <Filter>Ressourcendateien</Filter>
     </Image>
+    <Image Include="..\resources\icon2.ico">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="..\Resources\ICONlarge.ico">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
   </ItemGroup>
 </Project>

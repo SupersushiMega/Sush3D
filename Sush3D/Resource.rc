@@ -26,7 +26,7 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-MAINICON                ICON                    "D:\\Coding\\Sush3D\\Resources\\ICONmedium.ico"
+MAINICON                ICON                    "D:\\Coding\\Sush3D\\Resources\\ICONlarge.ico"
 
 #endif    // Neutral (Standard) resources
 /////////////////////////////////////////////////////////////////////////////
