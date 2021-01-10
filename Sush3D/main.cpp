@@ -6,6 +6,7 @@ Made by SupersushiMega with help of javidx9 code-It-Yourself 3D Graphics Engine 
 #include <Windows.h>
 #include "Graphics.h"
 #include <algorithm>
+#include <time.h>
 
 Graphics* graphics;
 bool closeWindow = false;
@@ -99,6 +100,20 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 	BMPDrawTest.LoadBitmapAlpha("BMPDrawTestAlpha.bmp");
 
 	uint8_t frame = 0;
+
+	uint16_t FPS = 0;
+
+	time_t StartTime = time(NULL);
+	time_t CurTime = time(NULL);
+
+	float X = graphics->camera.GlobalPos.x;
+	float Y = graphics->camera.GlobalPos.y;
+	float Z = graphics->camera.GlobalPos.z;
+
+	char Buffer[500] = { 0 };
+
+	string String;
+
 	while (!closeWindow)
 	{
 		if (PeekMessage(&message, windowhandle, 0, 0, PM_REMOVE))
@@ -162,21 +177,15 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 
 
 			graphics->ClearScreen(1, 1, 1, imageBuffer, AlphaDepthBuffer);
-			/*for (uint16_t Y = 0; Y < bitmap.Resolution[0]; Y++)
-			{
-				for (uint16_t X = 0; X < bitmap.Resolution[1]; X++)
-				{
-					float tmp = 0.0f;
-					imageBuffer.PutPix(X, Y, bitmap.Pixels[Y][X]);
-				}
-			}*/
-
-
-			//graphics->BeginDraw();
-			//graphics->DrawMesh(TestMesh, color, imageBuffer);
 
 			Logo.rotation.y += 0.01f;
 			
+			X = graphics->camera.GlobalPos.x;
+			Y = graphics->camera.GlobalPos.y;
+			Z = graphics->camera.GlobalPos.z;
+
+			
+
 			graphics->DrawMeshTextured(Logo, LogoBMP, imageBuffer, AlphaDepthBuffer);
 			//graphics->DrawMesh(Logo, color, imageBuffer);
 			//graphics->DrawMeshFilled(Suzzane, color, imageBuffer, AlphaDepthBuffer);
@@ -184,7 +193,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 			graphics->DrawMeshTextured(terrain, terrainBMP, imageBuffer, AlphaDepthBuffer);
 			graphics->DrawBMP(BMPDrawTest, 600, 780, imageBuffer, AlphaDepthBuffer);
 
-			graphics->DrawChar('A', 0, 0, color, imageBuffer);
+			sprintf_s(Buffer, "Sush3D \nVersion : Development\nX = %f \nY = %f \nZ = %f \n~FPS = %d", X, Y, Z, FPS);
+
+			graphics->DrawString(Buffer, 0, 0, color, imageBuffer);
 
 			//graphics->DrawMesh(Logo, color, imageBuffer);
 			//graphics->DrawMesh(Suzzane, color, imageBuffer);
@@ -193,10 +204,16 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 			//graphics->DrawMeshTextured(TestMesh, bitmap, imageBuffer, AlphaDepthBuffer);
 			//graphics->EndDraw();
 			//graphics->DrawLine(p1, p2, color, imageBuffer);
-			if (frame)
+
+			graphics->refresh(imageBuffer);
+
+			if (difftime(CurTime, StartTime) > 1)
 			{
-				graphics->refresh(imageBuffer);
+				time(&StartTime);
+				FPS = frame;
+				frame = 0;
 			}
+			time(&CurTime);
 			frame++;
 		}
 	}

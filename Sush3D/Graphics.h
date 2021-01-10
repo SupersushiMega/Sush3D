@@ -217,6 +217,7 @@ public:
 	void DrawBMP(BitMap& bmp, uint16_t StartX, uint16_t StartY, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 
 	void DrawChar(char letter, uint16_t x, uint16_t y, Color& col, ImageBuff& imageBuff);
+	void DrawString(string String, uint16_t startX, uint16_t startY, Color& col, ImageBuff& imageBuff);
 	
 	//3D:
 	void DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff);

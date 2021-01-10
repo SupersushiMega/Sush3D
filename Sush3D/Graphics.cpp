@@ -1468,7 +1468,7 @@ void Graphics::DrawChar(char letter, uint16_t x, uint16_t y, Color& col, ImageBu
 		{
 			winX = letterX + x;
 			winY = letterY + y;
-			mask = 0x01 << letterX;
+			mask = 0x01 << (7 - letterX);
 			if (!(Font[letter - 32][letterY] & mask))
 			{
 				if ((winX < imageBuff.width) && (winY < imageBuff.height))
@@ -1476,6 +1476,28 @@ void Graphics::DrawChar(char letter, uint16_t x, uint16_t y, Color& col, ImageBu
 					imageBuff.PutPix(winX, winY, col);
 				}
 			}
+		}
+	}
+}
+
+void Graphics::DrawString(string String, uint16_t startX, uint16_t startY, Color& col, ImageBuff& imageBuff)
+{
+	char letter = 0;
+
+	uint16_t letterPosX = startX;
+	uint16_t letterPosY = startY;
+
+	for (auto letter : String)
+	{	
+		if ((letterPosX + 8) < imageBuff.width && !(letter == '\n'))
+		{
+			DrawChar(letter, letterPosX, letterPosY, col, imageBuff);
+			letterPosX += 8;
+		}
+		else
+		{
+			letterPosY += 15;
+			letterPosX = startX;
 		}
 	}
 }
