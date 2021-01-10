@@ -703,7 +703,7 @@ uint16_t Graphics::TrianglePlaneClip(vec3D PlanePoint, vec3D PlaneNormal, triang
 		return 2;
 	}
 }
-
+//a
 void Graphics::ClearScreen(float r, float g, float b, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff)
 {
 	for (uint16_t Y = 0; Y < Resolution.height; Y++)
