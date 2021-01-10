@@ -703,7 +703,7 @@ uint16_t Graphics::TrianglePlaneClip(vec3D PlanePoint, vec3D PlaneNormal, triang
 		return 2;
 	}
 }
-//a
+
 void Graphics::ClearScreen(float r, float g, float b, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff)
 {
 	for (uint16_t Y = 0; Y < Resolution.height; Y++)
@@ -1452,35 +1452,46 @@ void Graphics::DrawBMP(BitMap& bmp, uint16_t StartX, uint16_t StartY, ImageBuff&
 	}
 }
 
-void Graphics::DrawChar(char letter, uint16_t x, uint16_t y, Color& col, ImageBuff& imageBuff)
+void Graphics::DrawChar(char letter, uint16_t x, uint16_t y, uint8_t scaleX, uint8_t scaleY, Color& col, ImageBuff& imageBuff)
 {
-	uint16_t letterX = 0;	//X position in the letter
-	uint16_t letterY = 0;	//Y position in the letter
+
+	float letterX = 0;	//true X position in the letter
+	float letterY = 0;	//true Y position in the letter
+
+	uint8_t letterXu = 0;	//rounded X position in the letter
+	uint8_t letterYu = 0;	//rounded Y position in the letter
+
+	float deltaX = 8.0f / scaleX;	//Delta of the true X position in the letter between Pixels in the X axis
+	float deltaY = 15.0f / scaleY;	//Delta of the true Y position in the letter between Pixels in the Y axis
 
 	uint16_t winX = 0;	//X position in the window
 	uint16_t winY = 0;	//Y position in the window
 
 	uint8_t mask = 0;
 
-	for (letterY = 0; letterY < 15; letterY++)
+	letterY = 0;
+	for (winY = y; (winY < scaleY + y); winY++)
 	{
-		for (letterX = 0; letterX < 8; letterX++)
+		letterX = 0;
+		letterYu = floor(letterY);
+		for (winX = x; winX < (scaleX + x); winX++)
 		{
-			winX = letterX + x;
-			winY = letterY + y;
-			mask = 0x01 << (7 - letterX);
-			if (!(Font[letter - 32][letterY] & mask))
+			letterXu = floor(letterX);
+			mask = 0x01 << (7 - (letterXu));
+			if (!(Font[letter - 32][letterYu] & mask))
 			{
 				if ((winX < imageBuff.width) && (winY < imageBuff.height))
 				{
 					imageBuff.PutPix(winX, winY, col);
 				}
 			}
+			letterX += deltaX;
 		}
+		letterY += deltaY;
 	}
 }
 
-void Graphics::DrawString(string String, uint16_t startX, uint16_t startY, Color& col, ImageBuff& imageBuff)
+void Graphics::DrawString(string String, uint16_t startX, uint16_t startY, Color& col, ImageBuff& imageBuff, uint8_t scaleX, uint8_t scaleY)
 {
 	char letter = 0;
 
@@ -1489,14 +1500,14 @@ void Graphics::DrawString(string String, uint16_t startX, uint16_t startY, Color
 
 	for (auto letter : String)
 	{	
-		if ((letterPosX + 8) < imageBuff.width && !(letter == '\n'))
+		if ((letterPosX + scaleX) < imageBuff.width && !(letter == '\n'))
 		{
-			DrawChar(letter, letterPosX, letterPosY, col, imageBuff);
-			letterPosX += 8;
+			DrawChar(letter, letterPosX, letterPosY, scaleX, scaleY, col, imageBuff);
+			letterPosX += scaleX;
 		}
 		else
 		{
-			letterPosY += 15;
+			letterPosY += scaleY;
 			letterPosX = startX;
 		}
 	}

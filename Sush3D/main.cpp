@@ -195,7 +195,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 
 			sprintf_s(Buffer, "Sush3D \nVersion : Development\nX = %f \nY = %f \nZ = %f \n~FPS = %d", X, Y, Z, FPS);
 
-			graphics->DrawString(Buffer, 0, 0, color, imageBuffer);
+			graphics->DrawString(Buffer, 0, 0, color, imageBuffer, 16, 30);
 
 			//graphics->DrawMesh(Logo, color, imageBuffer);
 			//graphics->DrawMesh(Suzzane, color, imageBuffer);

@@ -216,8 +216,8 @@ public:
 	void DrawTrianglefilled(triangle &Triangle, Color &color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 	void DrawBMP(BitMap& bmp, uint16_t StartX, uint16_t StartY, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 
-	void DrawChar(char letter, uint16_t x, uint16_t y, Color& col, ImageBuff& imageBuff);
-	void DrawString(string String, uint16_t startX, uint16_t startY, Color& col, ImageBuff& imageBuff);
+	void DrawChar(char letter, uint16_t x, uint16_t y, uint8_t scaleX, uint8_t scaleY, Color& col, ImageBuff& imageBuff);
+	void DrawString(string String, uint16_t startX, uint16_t startY, Color& col, ImageBuff& imageBuff, uint8_t scaleX = 8, uint8_t scaleY = 15);
 	
 	//3D:
 	void DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff);
