@@ -158,7 +158,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 			}
 
 			//render
-			Graphics::Color color = { 0.5f, 0.5f, 0.5f, 0.5f };
+			Graphics::Color color = { 0.5f, 0.5f, 0.5f, 1.0f };
 
 
 			graphics->ClearScreen(1, 1, 1, imageBuffer, AlphaDepthBuffer);
@@ -183,6 +183,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 			graphics->DrawMeshTextured(Suzzane, SuzzaneBMP, imageBuffer, AlphaDepthBuffer);
 			graphics->DrawMeshTextured(terrain, terrainBMP, imageBuffer, AlphaDepthBuffer);
 			graphics->DrawBMP(BMPDrawTest, 600, 780, imageBuffer, AlphaDepthBuffer);
+
+			graphics->DrawChar('A', 0, 0, color, imageBuffer);
 
 			//graphics->DrawMesh(Logo, color, imageBuffer);
 			//graphics->DrawMesh(Suzzane, color, imageBuffer);

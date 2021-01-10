@@ -1452,6 +1452,34 @@ void Graphics::DrawBMP(BitMap& bmp, uint16_t StartX, uint16_t StartY, ImageBuff&
 	}
 }
 
+void Graphics::DrawChar(char letter, uint16_t x, uint16_t y, Color& col, ImageBuff& imageBuff)
+{
+	uint16_t letterX = 0;	//X position in the letter
+	uint16_t letterY = 0;	//Y position in the letter
+
+	uint16_t winX = 0;	//X position in the window
+	uint16_t winY = 0;	//Y position in the window
+
+	uint8_t mask = 0;
+
+	for (letterY = 0; letterY < 15; letterY++)
+	{
+		for (letterX = 0; letterX < 8; letterX++)
+		{
+			winX = letterX + x;
+			winY = letterY + y;
+			mask = 0x01 << letterX;
+			if (!(Font[letter - 32][letterY] & mask))
+			{
+				if ((winX < imageBuff.width) && (winY < imageBuff.height))
+				{
+					imageBuff.PutPix(winX, winY, col);
+				}
+			}
+		}
+	}
+}
+
 void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff)
 {
 	triangle TransformedTri;
