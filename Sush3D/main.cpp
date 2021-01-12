@@ -193,9 +193,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 			graphics->DrawMeshTextured(terrain, terrainBMP, imageBuffer, AlphaDepthBuffer);
 			graphics->DrawBMP(BMPDrawTest, 600, 780, imageBuffer, AlphaDepthBuffer);
 
-			sprintf_s(Buffer, "Sush3D \nVersion : Development\nX = %f \nY = %f \nZ = %f \n~FPS = %d", X, Y, Z, FPS);
+			sprintf_s(Buffer, "Sush3D \nVersion : Development_2Din3D_Sprite\nX = %f \nY = %f \nZ = %f \n~FPS = %d", X, Y, Z, FPS);
 
-			graphics->DrawString(Buffer, 0, 0, color, imageBuffer, 16, 30);
+			graphics->DrawString(Buffer, 0, 0, color, imageBuffer);
 
 			//graphics->DrawMesh(Logo, color, imageBuffer);
 			//graphics->DrawMesh(Suzzane, color, imageBuffer);
