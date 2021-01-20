@@ -153,8 +153,8 @@ bool Graphics::BitMap::LoadBitmapRGB(const char *filename)
 	fread(&fileHeader, sizeof(fileHeader), 1, bitmap);	//get fileheader data
 	fread(&infoHeader, sizeof(infoHeader), 1, bitmap);	//get infoheader data
 
-	MapResolution[0] = infoHeader.biWidth;
-	MapResolution[1] = infoHeader.biHeight;
+	MapResolution.width = infoHeader.biWidth;
+	MapResolution.height = infoHeader.biHeight;
 
 	uint64_t size = infoHeader.biWidth * infoHeader.biHeight;
 
@@ -217,8 +217,8 @@ bool Graphics::BitMap::LoadBitmapAlpha(const char* filename)
 	fread(&fileHeader, sizeof(fileHeader), 1, bitmap);	//get fileheader data
 	fread(&infoHeader, sizeof(infoHeader), 1, bitmap);	//get infoheader data
 
-	MapResolution[0] = infoHeader.biWidth;
-	MapResolution[1] = infoHeader.biHeight;
+	MapResolution.width = infoHeader.biWidth;
+	MapResolution.height = infoHeader.biHeight;
 
 	uint64_t size = infoHeader.biWidth * infoHeader.biHeight;
 
@@ -231,10 +231,10 @@ bool Graphics::BitMap::LoadBitmapAlpha(const char* filename)
 	Color tempCol;
 	vector<Color> TempVecX;
 
-	for (uint16_t Y = 0; Y < MapResolution[1]; Y++)
+	for (uint16_t Y = 0; Y < MapResolution.height; Y++)
 	{
 		TempVecX.clear();
-		for (uint16_t X = 0; X < MapResolution[0]; X++)
+		for (uint16_t X = 0; X < MapResolution.width; X++)
 		{
 			fread(&tempRGB, sizeRGB, 1, bitmap);
 			Pixels[Y][X].a = ((float)((tempRGB.r + tempRGB.g + tempRGB.b) / 3) / 255);	//calculate average of RGB values and set alpha value equal to it
@@ -1217,7 +1217,7 @@ void Graphics::DrawTriangletextured(triangle& Triangle, BitMap& texture, ImageBu
 					failCount = 0;
 					if (TextureW > AlphaDepthBuff.getDepth(x, y))
 					{
-						color = texture.Pixels[(uint16_t)((TextureV / TextureW) * (texture.MapResolution[1] - 1)) % texture.MapResolution[1]][(uint16_t)((TextureU / TextureW) * (texture.MapResolution[0] - 1)) % texture.MapResolution[0]];
+						color = texture.Pixels[(uint16_t)((TextureV / TextureW) * (texture.MapResolution.height - 1)) % texture.MapResolution.height][(uint16_t)((TextureU / TextureW) * (texture.MapResolution.width - 1)) % texture.MapResolution.width];
 
 						//Calculate Color
 						//==========================================================================================================================
@@ -1255,7 +1255,7 @@ void Graphics::DrawTriangletextured(triangle& Triangle, BitMap& texture, ImageBu
 					{
 						if (AlphaDepthBuff.getAlpha(x, y) != 1)	//Draw behind seethrough pixel
 						{
-							color = texture.Pixels[(uint16_t)((TextureV / TextureW) * (texture.MapResolution[1] - 1)) % texture.MapResolution[1]][(uint16_t)((TextureU / TextureW) * (texture.MapResolution[0] - 1)) % texture.MapResolution[0]];
+							color = texture.Pixels[(uint16_t)((TextureV / TextureW) * (texture.MapResolution.height - 1)) % texture.MapResolution.height][(uint16_t)((TextureU / TextureW) * (texture.MapResolution.width - 1)) % texture.MapResolution.width];
 							
 							//Calculate Color
 							//==========================================================================================================================
@@ -1347,7 +1347,7 @@ void Graphics::DrawTriangletextured(triangle& Triangle, BitMap& texture, ImageBu
 				{
 					if (TextureW > AlphaDepthBuff.getDepth(x, y))
 					{
-						color = texture.Pixels[(uint16_t)((TextureV / TextureW) * (texture.MapResolution[1] - 1)) % texture.MapResolution[1]][(uint16_t)((TextureU / TextureW) * (texture.MapResolution[0] - 1)) % texture.MapResolution[0]];
+						color = texture.Pixels[(uint16_t)((TextureV / TextureW) * (texture.MapResolution.height - 1)) % texture.MapResolution.height][(uint16_t)((TextureU / TextureW) * (texture.MapResolution.width - 1)) % texture.MapResolution.width];
 
 						//Calculate Color
 						//==========================================================================================================================
@@ -1385,7 +1385,7 @@ void Graphics::DrawTriangletextured(triangle& Triangle, BitMap& texture, ImageBu
 					{
 						if (AlphaDepthBuff.getAlpha(x, y) != 1)	//Draw behind seethrough pixel
 						{
-							color = texture.Pixels[(uint16_t)((TextureV / TextureW) * (texture.MapResolution[1] - 1)) % texture.MapResolution[1]][(uint16_t)((TextureU / TextureW) * (texture.MapResolution[0] - 1)) % texture.MapResolution[0]];
+							color = texture.Pixels[(uint16_t)((TextureV / TextureW) * (texture.MapResolution.height - 1)) % texture.MapResolution.height][(uint16_t)((TextureU / TextureW) * (texture.MapResolution.width - 1)) % texture.MapResolution.width];
 							
 							//Calculate Color
 							//==========================================================================================================================
@@ -1415,9 +1415,9 @@ void Graphics::DrawBMP(BitMap& bmp, uint16_t StartX, uint16_t StartY, ImageBuff&
 
 	Color color;
 
-	for (y = 0; (y < bmp.MapResolution[1]) && ((y + StartY) < imageBuff.height); y++)
+	for (y = 0; (y < bmp.MapResolution.height) && ((y + StartY) < imageBuff.height); y++)
 	{
-		for (x = 0;( x < bmp.MapResolution[0]) && ((x + StartX) < imageBuff.width); x++)
+		for (x = 0;( x < bmp.MapResolution.width) && ((x + StartX) < imageBuff.width); x++)
 		{
 			winX = x + StartX;	//Offset x
 			winY = y + StartY;	//Offset y
@@ -1511,6 +1511,33 @@ void Graphics::DrawString(string String, uint16_t startX, uint16_t startY, Color
 			letterPosX = startX;
 		}
 	}
+}
+
+void Graphics::DrawSprite3D(BitMap& sprite, vec3D& WorldPos, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff, uint16_t sizeX, uint16_t sizeY)
+{
+	if (!sizeX)
+	{
+		sizeX = sprite.MapResolution.width;
+	}
+
+	if (!sizeY)
+	{
+		sizeY = sprite.MapResolution.height;
+	}
+
+	vec3D target = { 0.0f,0.0f,1.0f };
+
+	//Translation
+	//==========================================================================================================================	
+	matrix4x4 TransMatrix = MakeTranslationMatrix(WorldPos.x, WorldPos.z, WorldPos.y);	//create translation Matrix
+
+	//Creating the WorldMatrix
+	matrix4x4 WorldMatrix = MakeIdentityMarix();
+	WorldMatrix = MatrixMatrixMultiplication(WorldMatrix, TransMatrix);
+	//==========================================================================================================================	
+
+
+
 }
 
 void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff)

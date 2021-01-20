@@ -121,6 +121,7 @@ public:
 		bool LoadFromObj(string filename);	//Load 3D modell from OBJ file. Must have UV data
 	};
 
+
 	struct GlobalLight
 	{
 		vec3D Direction = { 0.0f, 0.0f, -1.0f };
@@ -136,20 +137,20 @@ public:
 		vec3D TargetRot = { 0.0f, 0.0f, 1.0f };
 	};
 
+	struct resolution
+	{
+		uint16_t width = 0;
+		uint16_t height = 0;
+	};
+
 	struct BitMap
 	{
-		uint32_t MapResolution[2];
+		resolution MapResolution;
 		vector<vector<Color>> Pixels;
 
 		bool LoadBitmapRGB(const char* filename);	//Load 24bit Bitmap for RGB values
 
 		bool LoadBitmapAlpha(const char* filename);	//Load 24bit Bitmap for Alpha values. The alpha value will be the average of the R, G and B values. (Has to be equal in size to RGB equivalent)	(if no Alpha map has been loaded all Alpha is set to max(Not see through))
-	};
-
-	struct resolution
-	{
-		uint16_t width = 0;
-		uint16_t height = 0;
 	};
 
 	resolution Resolution;
@@ -220,11 +221,13 @@ public:
 	void DrawString(string String, uint16_t startX, uint16_t startY, Color& col, ImageBuff& imageBuff, uint8_t scaleX = 8, uint8_t scaleY = 15);
 	
 	//3D:
+	void DrawSprite3D(BitMap &sprite, vec3D &WorldPos, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff, uint16_t sizeX = 0, uint16_t sizeY = 0);	//Draws a 2D sprite in 3D space, similar to Wolfenstein3D or the original Doom. if size values are 0 image resolution will be used
+
 	void DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff);
 	void DrawMeshFilled(mesh mesh, Color color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 	void DrawMeshTextured(mesh mesh, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 
-
+	//Other
 	void ClearScreen(float r, float g, float b, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 	void refresh(ImageBuff& imageBuff);
 	//==========================================================================================================================
