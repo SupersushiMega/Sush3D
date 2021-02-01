@@ -14,6 +14,7 @@ Textures must be in a 24Bit Bitmap format (Bitmaps of textures made with blender
 #include <vector>
 #include <fstream>
 #include <strstream>
+#include <thread>
 
 using namespace std;
 
@@ -22,7 +23,10 @@ class Graphics
 	ID2D1Factory* factory;
 	ID2D1HwndRenderTarget* rendertarget;
 	ID2D1SolidColorBrush* Solidbrush;
-	ID2D1Bitmap* BufferBmp;
+
+	SYSTEM_INFO systemInfo;
+
+	std::thread refreshThread;
 
 	float* Alpha_DepthBuffer;
 
@@ -60,7 +64,8 @@ public:
 			void PutPix(uint16_t &x, uint16_t &y, Color &col);
 			Color GetPix(uint16_t& x, uint16_t& y);
 
-			uint32_t* PixelsPtr = nullptr;
+			uint32_t* PixelsPtr = nullptr;	//Pointer for the list of pixels where the picture is being built
+			uint32_t* SecPixelsPtr = nullptr;	//pointer to the list of pixels which are used in the refresh process
 			uint16_t width = 0;
 			uint16_t height = 0;
 	};
@@ -153,6 +158,7 @@ public:
 		bool LoadBitmapAlpha(const char* filename);	//Load 24bit Bitmap for Alpha values. The alpha value will be the average of the R, G and B values. (Has to be equal in size to RGB equivalent)	(if no Alpha map has been loaded all Alpha is set to max(Not see through))
 	};
 
+
 	resolution Resolution;
 
 	GlobalLight globalLight;
@@ -164,49 +170,53 @@ public:
 public:
 	//Calculation functions
 	//==========================================================================================================================
-	vec3D MatrixVectorMultiplication(vec3D& inputVec, matrix4x4& matrix);
-	matrix4x4 MatrixMatrixMultiplication(matrix4x4& matrix1, matrix4x4& matrix2);
-	matrix4x4 MatrixInvertQuick(matrix4x4& matrixIn);	//Only Rotation and Translation Matrices
+	class CalcFunc
+	{
+		public:
+			vec3D MatrixVectorMultiplication(vec3D& inputVec, matrix4x4& matrix);
+			void MatrixMatrixMultiplication(matrix4x4& matrix1, matrix4x4& matrix2, matrix4x4& output);
+			void MatrixInvertQuick(matrix4x4& matrixIn, matrix4x4& output);	//Only Rotation and Translation Matrices
+
+			void MakeIdentityMarix(matrix4x4& output);
+			void MakeZrotationMatrix(float& RadAngle, matrix4x4& output);
+			void MakeXrotationMatrix(float& RadAngle, matrix4x4& output);
+			void MakeYrotationMatrix(float& RadAngle, matrix4x4& output);
+			void MakeTranslationMatrix(float x, float y, float z, matrix4x4& output);
+			void MakeProjectionMatrix(float FovDeg, float Aspect, float DistFromScrn, float viewDist, matrix4x4& output);
+			void MakePointAtMatrix(vec3D position, vec3D target, vec3D UPvec, matrix4x4& output);
+			
+			vec3D AddVectors(vec3D& vec1, vec3D& vec2);
+			vec3D SubVectors(vec3D& vec1, vec3D& vec2);
+			vec3D MultVectorFloat(vec3D& vec1, float& mult);	//Multiplies a vector by a float
+			vec3D MultVectorVector(vec3D& vec1, vec3D& mult);	//Multiplies two vectors
+			vec3D DivVector(vec3D& vec1, float& div);
+
+			float DotProduct(vec3D& vec1, vec3D& vec2);
 	
-	matrix4x4 MakeIdentityMarix();
-	matrix4x4 MakeZrotationMatrix(float RadAngle);
-	matrix4x4 MakeXrotationMatrix(float RadAngle);
-	matrix4x4 MakeYrotationMatrix(float RadAngle);
-	matrix4x4 MakeTranslationMatrix(float x, float y, float z);
-	matrix4x4 MakeProjectionMatrix(float FovDeg, float Aspect, float DistFromScrn, float viewDist);
-	matrix4x4 MakePointAtMatrix(vec3D position, vec3D target, vec3D UPvec);
+			float VectorLength(vec3D& vec);
+			vec3D Normalise(vec3D& vec);
+			vec3D CrossProd(vec3D& vec1, vec3D& vec2);
 
-	vec3D AddVectors(vec3D& vec1, vec3D& vec2);
-	vec3D SubVectors(vec3D& vec1, vec3D& vec2);
-	vec3D MultVectorFloat(vec3D& vec1, float& mult);	//Multiplies a vector by a float
-	vec3D MultVectorVector(vec3D& vec1, vec3D& mult);	//Multiplies two vectors
-	vec3D DivVector(vec3D& vec1, float& div);
+			vec3D PlaneIntersect(vec3D& PlanePoint, vec3D& PlaneNormal, vec3D& StartOfLine, vec3D& EndOfLine, float& t);
 
-	float DotProduct(vec3D& vec1, vec3D& vec2);
-	
-	float VectorLength(vec3D& vec);
-	vec3D Normalise(vec3D& vec);
-	vec3D CrossProd(vec3D& vec1, vec3D& vec2);
-
-	vec3D PlaneIntersect(vec3D& PlanePoint, vec3D& PlaneNormal, vec3D& StartOfLine, vec3D& EndOfLine, float& t);
-
-	uint16_t TrianglePlaneClip(vec3D PlanePoint, vec3D PlaneNormal, triangle& InputTriangle, triangle& OutputTriangle1, triangle& OutputTriangle2);
+			uint16_t TrianglePlaneClip(vec3D PlanePoint, vec3D PlaneNormal, triangle& InputTriangle, triangle& OutputTriangle1, triangle& OutputTriangle2);
+	};
 	//==========================================================================================================================
 
 	//Draw functions
 	//==========================================================================================================================
-private:
-	void BeginDraw()
-	{
-		rendertarget->BeginDraw();
-	}
+	private:
+		void BeginDraw()
+		{
+			rendertarget->BeginDraw();
+		}
 
-	void EndDraw()
-	{
-		rendertarget->EndDraw();
-	}
-	
-	void DrawTriangletextured(triangle& Triangle, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
+		void EndDraw()
+		{
+			rendertarget->EndDraw();
+		}
+
+
 
 public:
 
@@ -215,6 +225,7 @@ public:
 	void DrawLine(Point& p1, Point& p2, Color& col, ImageBuff& imageBuff);
 	void DrawTriangle(triangle Triangle, Color color, ImageBuff& imageBuff);
 	void DrawTrianglefilled(triangle &Triangle, Color &color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
+	void DrawTriangletextured(triangle& Triangle, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 	void DrawBMP(BitMap& bmp, uint16_t StartX, uint16_t StartY, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 
 	void DrawChar(char letter, uint16_t x, uint16_t y, uint8_t scaleX, uint8_t scaleY, Color& col, ImageBuff& imageBuff);
@@ -230,6 +241,11 @@ public:
 	//Other
 	void ClearScreen(float r, float g, float b, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 	void refresh(ImageBuff& imageBuff);
+	class RefreshThreadProc
+	{
+		public:
+			void refresh(ID2D1HwndRenderTarget* rendertarget, ImageBuff& imageBuff);
+	};
 	//==========================================================================================================================
 
 	//Other functions

@@ -4,6 +4,7 @@
 #include <fstream>
 #include <strstream>
 #include <algorithm>
+#include <thread>
 #include <list>
 
 /*Sush3D
@@ -56,7 +57,6 @@ Graphics::Graphics()
 	factory = NULL;
 	rendertarget = NULL;
 	Solidbrush = NULL;
-	BufferBmp = NULL;
 }
 
 
@@ -96,6 +96,10 @@ bool Graphics::Init(HWND windowHandle, uint16_t width, uint16_t height, float FO
 	Graphics::Resolution.height = resolution.bottom;
 	Graphics::Resolution.width = resolution.right;
 
+	Graphics::CalcFunc CalcFuncs;
+
+	SYSTEM_INFO sysInfoTemp;
+
 	res = factory->CreateHwndRenderTarget
 	(
 		D2D1::RenderTargetProperties(),
@@ -119,7 +123,12 @@ bool Graphics::Init(HWND windowHandle, uint16_t width, uint16_t height, float FO
 		return false;
 	}
 
-	Graphics::ProjMatrix = MakeProjectionMatrix(90.0f, (float)Graphics::Resolution.height / (float)Graphics::Resolution.width, 0.1f, 1000.0f);
+	Graphics::ProjMatrix;
+	CalcFuncs.MakeProjectionMatrix(90.0f, (float)Graphics::Resolution.height / (float)Graphics::Resolution.width, 0.1f, 1000.0f, ProjMatrix);
+	
+	GetSystemInfo(&sysInfoTemp);
+
+	systemInfo = sysInfoTemp;
 
 	return true;
 }
@@ -251,6 +260,7 @@ Graphics::ImageBuff::ImageBuff(uint16_t Width, uint16_t Height)
 	width = Width;
 	height = Height;
 	PixelsPtr = new uint32_t[width * height];
+	SecPixelsPtr = new uint32_t[width * height];
 }
 
 Graphics::ImageBuff::~ImageBuff()
@@ -354,7 +364,7 @@ bool Graphics::mesh::LoadFromObj(string filename)
 	return true;
 };
 
-Graphics::vec3D Graphics::MatrixVectorMultiplication(vec3D& inputVec, matrix4x4& matrix)
+Graphics::vec3D Graphics::CalcFunc::MatrixVectorMultiplication(vec3D& inputVec, matrix4x4& matrix)
 {
 	vec3D outputVec;
 	outputVec.x = inputVec.x * matrix.mat[0][0] + inputVec.y * matrix.mat[1][0] + inputVec.z * matrix.mat[2][0] + inputVec.w * matrix.mat[3][0];
@@ -365,7 +375,7 @@ Graphics::vec3D Graphics::MatrixVectorMultiplication(vec3D& inputVec, matrix4x4&
 	return outputVec;
 }
 
-Graphics::matrix4x4 Graphics::MatrixMatrixMultiplication(matrix4x4& matrix1, matrix4x4& matrix2)
+void Graphics::CalcFunc::MatrixMatrixMultiplication(matrix4x4& matrix1, matrix4x4& matrix2, matrix4x4& output)
 {
 	matrix4x4 matrix;
 	for (uint8_t y = 0; y < 4; y++)
@@ -375,10 +385,10 @@ Graphics::matrix4x4 Graphics::MatrixMatrixMultiplication(matrix4x4& matrix1, mat
 			matrix.mat[y][x] = matrix1.mat[y][0] * matrix2.mat[0][x] + matrix1.mat[y][1] * matrix2.mat[1][x] + matrix1.mat[y][2] * matrix2.mat[2][x] + matrix1.mat[y][3] * matrix2.mat[3][x];
 		}
 	}
-	return matrix;
+	output = matrix;
 }
 
-Graphics::matrix4x4 Graphics::MatrixInvertQuick(matrix4x4& matrixIn)	//Only Rotation and Translation Matrices
+void Graphics::CalcFunc::MatrixInvertQuick(matrix4x4& matrixIn, matrix4x4& output)	//Only Rotation and Translation Matrices
 {
 	matrix4x4 matrix;
 	matrix.mat[0][0] = matrixIn.mat[0][0];
@@ -400,20 +410,20 @@ Graphics::matrix4x4 Graphics::MatrixInvertQuick(matrix4x4& matrixIn)	//Only Rota
 	matrix.mat[3][1] = -(matrixIn.mat[3][0] * matrix.mat[0][1] + matrixIn.mat[3][1] * matrix.mat[1][1] + matrixIn.mat[3][2] * matrix.mat[2][1]);
 	matrix.mat[3][2] = -(matrixIn.mat[3][0] * matrix.mat[0][2] + matrixIn.mat[3][1] * matrix.mat[1][2] + matrixIn.mat[3][2] * matrix.mat[2][2]);
 	matrix.mat[3][3] = 1.0f;
-	return matrix;
+	output = matrix;
 }
 
-Graphics::matrix4x4 Graphics::MakeIdentityMarix()
+void Graphics::CalcFunc::MakeIdentityMarix(matrix4x4& output)
 {
 	matrix4x4 matrix;
 	matrix.mat[0][0] = 1.0f;
 	matrix.mat[1][1] = 1.0f;
 	matrix.mat[2][2] = 1.0f;
 	matrix.mat[3][3] = 1.0f;
-	return matrix;
+	output = matrix;
 }
 
-Graphics::matrix4x4 Graphics::MakeZrotationMatrix(float RadAngle)
+void Graphics::CalcFunc::MakeZrotationMatrix(float& RadAngle, matrix4x4& output)
 {
 	matrix4x4 matrix;
 	matrix.mat[0][0] = cosf(RadAngle);
@@ -422,10 +432,10 @@ Graphics::matrix4x4 Graphics::MakeZrotationMatrix(float RadAngle)
 	matrix.mat[1][1] = cosf(RadAngle);
 	matrix.mat[2][2] = 1.0f;
 	matrix.mat[3][3] = 1.0f;
-	return matrix;
+	output = matrix;
 }
 
-Graphics::matrix4x4 Graphics::MakeXrotationMatrix(float RadAngle)
+void Graphics::CalcFunc::MakeXrotationMatrix(float &RadAngle, matrix4x4& output)
 {
 	matrix4x4 matrix;
 	matrix.mat[0][0] = 1.0f;
@@ -434,10 +444,10 @@ Graphics::matrix4x4 Graphics::MakeXrotationMatrix(float RadAngle)
 	matrix.mat[2][1] = -sinf(RadAngle);
 	matrix.mat[2][2] = cosf(RadAngle);
 	matrix.mat[3][3] = 1.0f;
-	return matrix;
+	output = matrix;
 }
 
-Graphics::matrix4x4 Graphics::MakeYrotationMatrix(float RadAngle)
+void Graphics::CalcFunc::MakeYrotationMatrix(float& RadAngle, matrix4x4& output)
 {
 	matrix4x4 matrix;
 	matrix.mat[0][0] = cosf(RadAngle);
@@ -446,10 +456,10 @@ Graphics::matrix4x4 Graphics::MakeYrotationMatrix(float RadAngle)
 	matrix.mat[1][1] = 1.0f;
 	matrix.mat[2][2] = cosf(RadAngle);
 	matrix.mat[3][3] = 1.0f;
-	return matrix;
+	output = matrix;
 }
 
-Graphics::matrix4x4 Graphics::MakeTranslationMatrix(float x, float y, float z)
+void Graphics::CalcFunc::MakeTranslationMatrix(float x, float y, float z, matrix4x4& output)
 {
 	matrix4x4 matrix;
 	matrix.mat[0][0] = 1.0f;
@@ -459,10 +469,10 @@ Graphics::matrix4x4 Graphics::MakeTranslationMatrix(float x, float y, float z)
 	matrix.mat[3][0] = x;
 	matrix.mat[3][1] = y;
 	matrix.mat[3][2] = z;
-	return matrix;
+	output = matrix;
 }
 
-Graphics::matrix4x4 Graphics::MakeProjectionMatrix(float FovDeg, float Aspect, float DistFromScrn, float viewDist)
+void Graphics::CalcFunc::MakeProjectionMatrix(float FovDeg, float Aspect, float DistFromScrn, float viewDist, matrix4x4& output)
 {
 	float FovRadian = 1.0f / tanf(FovDeg * 0.5f / 180.0f * 3.14159f);
 	matrix4x4 matrix;
@@ -472,10 +482,10 @@ Graphics::matrix4x4 Graphics::MakeProjectionMatrix(float FovDeg, float Aspect, f
 	matrix.mat[3][2] = (-viewDist * DistFromScrn) / (viewDist - DistFromScrn);
 	matrix.mat[2][3] = 1.0f;
 	matrix.mat[3][3] = 0.0f;
-	return matrix;
+	output = matrix;
 }
 
-Graphics::matrix4x4 Graphics::MakePointAtMatrix(vec3D position, vec3D target, vec3D UPvec)
+void Graphics::CalcFunc::MakePointAtMatrix(vec3D position, vec3D target, vec3D UPvec, matrix4x4& output)
 {
 	vec3D ForwardNew = SubVectors(target, position);
 	ForwardNew = Normalise(ForwardNew);
@@ -508,51 +518,51 @@ Graphics::matrix4x4 Graphics::MakePointAtMatrix(vec3D position, vec3D target, ve
 	matrix.mat[3][1] = position.y;
 	matrix.mat[3][2] = position.z;
 	matrix.mat[3][3] = 1.0f;
-	return matrix;
+	output = matrix;
 }
 
-Graphics::vec3D Graphics::AddVectors(vec3D& vec1, vec3D& vec2)
+Graphics::vec3D Graphics::CalcFunc::AddVectors(vec3D& vec1, vec3D& vec2)
 {
 	return { vec1.x + vec2.x, vec1.y + vec2.y, vec1.z + vec2.z };
 }
 
-Graphics::vec3D Graphics::SubVectors(vec3D& vec1, vec3D& vec2)
+Graphics::vec3D Graphics::CalcFunc::SubVectors(vec3D& vec1, vec3D& vec2)
 {
 	return { vec1.x - vec2.x, vec1.y - vec2.y, vec1.z - vec2.z };
 }
 
-Graphics::vec3D Graphics::MultVectorFloat(vec3D& vec1, float& mult)
+Graphics::vec3D Graphics::CalcFunc::MultVectorFloat(vec3D& vec1, float& mult)
 {
 	return { vec1.x * mult, vec1.y * mult, vec1.z * mult };
 }
 
-Graphics::vec3D Graphics::MultVectorVector(vec3D& vec1, vec3D& vec2)
+Graphics::vec3D Graphics::CalcFunc::MultVectorVector(vec3D& vec1, vec3D& vec2)
 {
 	return { vec1.x * vec2.x, vec1.y * vec2.y, vec1.z * vec2.z };
 }
 
-Graphics::vec3D Graphics::DivVector(vec3D& vec1, float& div)
+Graphics::vec3D Graphics::CalcFunc::DivVector(vec3D& vec1, float& div)
 {
 	return { vec1.x / div, vec1.y / div, vec1.z / div };
 }
 
-float Graphics::DotProduct(vec3D& vec1, vec3D &vec2)
+float Graphics::CalcFunc::DotProduct(vec3D& vec1, vec3D &vec2)
 {
 	return vec1.x * vec2.x + vec1.y * vec2.y + vec1.z * vec2.z;
 }
 
-float Graphics::VectorLength(vec3D& vec)
+float Graphics::CalcFunc::VectorLength(vec3D& vec)
 {
 	return sqrtf(DotProduct(vec, vec));
 }
 
-Graphics::vec3D Graphics::Normalise(vec3D& vec)
+Graphics::vec3D Graphics::CalcFunc::Normalise(vec3D& vec)
 {
 	float length = VectorLength(vec);
 	return { vec.x / length, vec.y / length, vec.z / length, };
 }
 
-Graphics::vec3D Graphics::CrossProd(vec3D& vec1, vec3D& vec2)
+Graphics::vec3D Graphics::CalcFunc::CrossProd(vec3D& vec1, vec3D& vec2)
 {
 	vec3D vec;
 	vec.x = vec1.y * vec2.z - vec1.z * vec2.y;
@@ -561,7 +571,7 @@ Graphics::vec3D Graphics::CrossProd(vec3D& vec1, vec3D& vec2)
 	return vec;
 }
 
-Graphics::vec3D Graphics::PlaneIntersect(vec3D& PlanePoint, vec3D& PlaneNormal, vec3D& StartOfLine, vec3D& EndOfLine, float& t)
+Graphics::vec3D Graphics::CalcFunc::PlaneIntersect(vec3D& PlanePoint, vec3D& PlaneNormal, vec3D& StartOfLine, vec3D& EndOfLine, float& t)
 {
 	PlaneNormal = Normalise(PlaneNormal);
 	float PlaneDotProd = -DotProduct(PlaneNormal, PlanePoint);
@@ -573,7 +583,7 @@ Graphics::vec3D Graphics::PlaneIntersect(vec3D& PlanePoint, vec3D& PlaneNormal, 
 	return AddVectors(StartOfLine, IntersectToLine);
 }
 
-uint16_t Graphics::TrianglePlaneClip(vec3D PlanePoint, vec3D PlaneNormal, triangle& InputTriangle, triangle& OutputTriangle1, triangle& OutputTriangle2)
+uint16_t Graphics::CalcFunc::TrianglePlaneClip(vec3D PlanePoint, vec3D PlaneNormal, triangle& InputTriangle, triangle& OutputTriangle1, triangle& OutputTriangle2)
 {
 	PlaneNormal = Normalise(PlaneNormal);
 
@@ -1568,42 +1578,54 @@ void Graphics::DrawMesh(mesh Mesh, Color color, ImageBuff& imageBuff)
 
 	//Mesh Rotation
 	//==========================================================================================================================	
-	matrix4x4 RotXMatrix = MakeXrotationMatrix(Mesh.rotation.x);
-	matrix4x4 RotYMatrix = MakeYrotationMatrix(Mesh.rotation.y);
-	matrix4x4 RotZMatrix = MakeZrotationMatrix(Mesh.rotation.z);
+	matrix4x4 RotXMatrix;
+	matrix4x4 RotYMatrix;
+	matrix4x4 RotZMatrix;
 
-	matrix4x4 TransMatrix = MakeTranslationMatrix(Mesh.WorldPos.x, Mesh.WorldPos.z, Mesh.WorldPos.y);
+	matrix4x4 TransMatrix;
+	matrix4x4 WorldMatrix;
 
-	matrix4x4 WorldMatrix = MakeIdentityMarix();
+	Graphics::CalcFunc CalcFuncs;
+
+	CalcFuncs.MakeXrotationMatrix(Mesh.rotation.x, RotXMatrix);
+	CalcFuncs.MakeYrotationMatrix(Mesh.rotation.y, RotYMatrix);
+	CalcFuncs.MakeZrotationMatrix(Mesh.rotation.z, RotZMatrix);
+
+	CalcFuncs.MakeTranslationMatrix(Mesh.WorldPos.x, Mesh.WorldPos.z, Mesh.WorldPos.y, TransMatrix);
+	CalcFuncs.MakeIdentityMarix(WorldMatrix);
+
 	
-	WorldMatrix = MatrixMatrixMultiplication(RotZMatrix, RotXMatrix);
-	WorldMatrix = MatrixMatrixMultiplication(WorldMatrix, RotYMatrix);
-	WorldMatrix = MatrixMatrixMultiplication(WorldMatrix, TransMatrix);
+	CalcFuncs.MatrixMatrixMultiplication(RotZMatrix, RotXMatrix, WorldMatrix);
+	CalcFuncs.MatrixMatrixMultiplication(WorldMatrix, RotYMatrix, WorldMatrix);
+	CalcFuncs.MatrixMatrixMultiplication(WorldMatrix, TransMatrix, WorldMatrix);
 	//==========================================================================================================================
 
 	vec3D target = { 0.0f,0.0f,1.0f };
 
-	matrix4x4 CamRotYMatrix = MakeYrotationMatrix(camera.TargetRot.y);
-	vec3D lookDir = MatrixVectorMultiplication(target, CamRotYMatrix);
-	target = AddVectors(Graphics::camera.GlobalPos, lookDir);
-	matrix4x4 CamMatrix = MakePointAtMatrix(Graphics::camera.GlobalPos, target, Graphics::UpVec);
+	matrix4x4 CamRotYMatrix;
+	CalcFuncs.MakeYrotationMatrix(camera.TargetRot.y, CamRotYMatrix);
+	vec3D lookDir = CalcFuncs.MatrixVectorMultiplication(target, CamRotYMatrix);
+	target = CalcFuncs.AddVectors(Graphics::camera.GlobalPos, lookDir);
+	matrix4x4 CamMatrix;
+	CalcFuncs.MakePointAtMatrix(Graphics::camera.GlobalPos, target, Graphics::UpVec, CamMatrix);
 
-	vec3D tempVec = MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.x);
-	Graphics::camera.GlobalPos = Graphics::AddVectors(Graphics::camera.GlobalPos, tempVec);
+	vec3D tempVec = CalcFuncs.MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.x);
+	Graphics::camera.GlobalPos = CalcFuncs.AddVectors(Graphics::camera.GlobalPos, tempVec);
 
 
 	target = { 1.0f, 0.0f, 0.0f };
-	lookDir = MatrixVectorMultiplication(target, CamRotYMatrix);
-	target = AddVectors(Graphics::camera.GlobalPos, lookDir);
-	CamMatrix = MakePointAtMatrix(Graphics::camera.GlobalPos, target, Graphics::UpVec);
+	lookDir = CalcFuncs.MatrixVectorMultiplication(target, CamRotYMatrix);
+	target = CalcFuncs.AddVectors(Graphics::camera.GlobalPos, lookDir);
+	CalcFuncs.MakePointAtMatrix(Graphics::camera.GlobalPos, target, Graphics::UpVec, CamMatrix);
 
-	tempVec = MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.z);
-	Graphics::camera.GlobalPos = Graphics::AddVectors(Graphics::camera.GlobalPos, tempVec);
+	tempVec = CalcFuncs.MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.z);
+	Graphics::camera.GlobalPos = CalcFuncs.AddVectors(Graphics::camera.GlobalPos, tempVec);
 
 	//Graphics::camera.GlobalPos.x += Graphics::camera.LocalPosDelta.x;
 	Graphics::camera.GlobalPos.y += Graphics::camera.LocalPosDelta.y;
 
-	matrix4x4 ViewMatrix = MatrixInvertQuick(CamMatrix);
+	matrix4x4 ViewMatrix;
+	CalcFuncs.MatrixInvertQuick(CamMatrix, ViewMatrix);
 
 	vector<triangle> TriangleToRasterVector;
 
@@ -1611,9 +1633,9 @@ void Graphics::DrawMesh(mesh Mesh, Color color, ImageBuff& imageBuff)
 	//==========================================================================================================================
 	for (auto tri : Mesh.tri)
 	{
-		TransformedTri.vectors[0] = MatrixVectorMultiplication(tri.vectors[0], WorldMatrix);
-		TransformedTri.vectors[1] = MatrixVectorMultiplication(tri.vectors[1], WorldMatrix);
-		TransformedTri.vectors[2] = MatrixVectorMultiplication(tri.vectors[2], WorldMatrix);
+		TransformedTri.vectors[0] = CalcFuncs.MatrixVectorMultiplication(tri.vectors[0], WorldMatrix);
+		TransformedTri.vectors[1] = CalcFuncs.MatrixVectorMultiplication(tri.vectors[1], WorldMatrix);
+		TransformedTri.vectors[2] = CalcFuncs.MatrixVectorMultiplication(tri.vectors[2], WorldMatrix);
 
 		TransformedTri.texCoord[0] = tri.texCoord[0];
 		TransformedTri.texCoord[1] = tri.texCoord[1];
@@ -1621,23 +1643,23 @@ void Graphics::DrawMesh(mesh Mesh, Color color, ImageBuff& imageBuff)
 
 		//Normal Calculation
 		//==========================================================================================================================
-		line1 = SubVectors(TransformedTri.vectors[1], TransformedTri.vectors[0]);
-		line2 = SubVectors(TransformedTri.vectors[2], TransformedTri.vectors[0]);
+		line1 = CalcFuncs.SubVectors(TransformedTri.vectors[1], TransformedTri.vectors[0]);
+		line2 = CalcFuncs.SubVectors(TransformedTri.vectors[2], TransformedTri.vectors[0]);
 
-		normal = CrossProd(line1, line2);
+		normal = CalcFuncs.CrossProd(line1, line2);
 
-		normal = Normalise(normal);
+		normal = CalcFuncs.Normalise(normal);
 		//==========================================================================================================================
 
-		vec3D CameraRay = SubVectors(TransformedTri.vectors[0], camera.GlobalPos);	//Get a ray from triangle to camera
+		vec3D CameraRay = CalcFuncs.SubVectors(TransformedTri.vectors[0], camera.GlobalPos);	//Get a ray from triangle to camera
 
-		if (DotProduct(normal, CameraRay) < 0.0f)
+		if (CalcFuncs.DotProduct(normal, CameraRay) < 0.0f)
 		{
 			//World to viewspace
 			//==========================================================================================================================
-			ViewedTri.vectors[1] = MatrixVectorMultiplication(TransformedTri.vectors[1], ViewMatrix);
-			ViewedTri.vectors[0] = MatrixVectorMultiplication(TransformedTri.vectors[0], ViewMatrix);
-			ViewedTri.vectors[2] = MatrixVectorMultiplication(TransformedTri.vectors[2], ViewMatrix);
+			ViewedTri.vectors[1] = CalcFuncs.MatrixVectorMultiplication(TransformedTri.vectors[1], ViewMatrix);
+			ViewedTri.vectors[0] = CalcFuncs.MatrixVectorMultiplication(TransformedTri.vectors[0], ViewMatrix);
+			ViewedTri.vectors[2] = CalcFuncs.MatrixVectorMultiplication(TransformedTri.vectors[2], ViewMatrix);
 
 			ViewedTri.texCoord[0] = TransformedTri.texCoord[0];
 			ViewedTri.texCoord[1] = TransformedTri.texCoord[1];
@@ -1650,7 +1672,7 @@ void Graphics::DrawMesh(mesh Mesh, Color color, ImageBuff& imageBuff)
 			uint8_t ClippedTriCount = 0;
 			triangle ClippedTri[2];
 
-			ClippedTriCount = TrianglePlaneClip({ 0.0f, 0.0f, 0.1f }, { 0.0f, 0.0f, 1.0f }, ViewedTri, ClippedTri[0], ClippedTri[1]);
+			ClippedTriCount = CalcFuncs.TrianglePlaneClip({ 0.0f, 0.0f, 0.1f }, { 0.0f, 0.0f, 1.0f }, ViewedTri, ClippedTri[0], ClippedTri[1]);
 			//==========================================================================================================================
 
 			for (uint8_t n = 0; n < ClippedTriCount; n++)
@@ -1660,18 +1682,18 @@ void Graphics::DrawMesh(mesh Mesh, Color color, ImageBuff& imageBuff)
 				//==========================================================================================================================
 				//Normalize light
 				vec3D LightDirGlobal = { Graphics::globalLight.Direction.x, Graphics::globalLight.Direction.y, Graphics::globalLight.Direction.z };
-				LightDirGlobal = Normalise(LightDirGlobal);
+				LightDirGlobal = CalcFuncs.Normalise(LightDirGlobal);
 
-				float DotProduct = max(0.1f, Graphics::DotProduct(LightDirGlobal, normal));
+				float DotProduct = max(0.1f, CalcFuncs.DotProduct(LightDirGlobal, normal));
 
 				ProjectedTri.color = { ClippedTri[n].color.r * DotProduct, ClippedTri[n].color.g * DotProduct, ClippedTri[n].color.b * DotProduct, ClippedTri[n].color.a };
 				//==========================================================================================================================
 
 				//Projection Matrix Multiplication
 				//==========================================================================================================================
-				ProjectedTri.vectors[0] = MatrixVectorMultiplication(ClippedTri[n].vectors[0], Graphics::ProjMatrix);
-				ProjectedTri.vectors[1] = MatrixVectorMultiplication(ClippedTri[n].vectors[1], Graphics::ProjMatrix);
-				ProjectedTri.vectors[2] = MatrixVectorMultiplication(ClippedTri[n].vectors[2], Graphics::ProjMatrix);
+				ProjectedTri.vectors[0] = CalcFuncs.MatrixVectorMultiplication(ClippedTri[n].vectors[0], Graphics::ProjMatrix);
+				ProjectedTri.vectors[1] = CalcFuncs.MatrixVectorMultiplication(ClippedTri[n].vectors[1], Graphics::ProjMatrix);
+				ProjectedTri.vectors[2] = CalcFuncs.MatrixVectorMultiplication(ClippedTri[n].vectors[2], Graphics::ProjMatrix);
 				//==========================================================================================================================
 
 				ProjectedTri.texCoord[0] = ClippedTri[n].texCoord[0];
@@ -1690,17 +1712,17 @@ void Graphics::DrawMesh(mesh Mesh, Color color, ImageBuff& imageBuff)
 				ProjectedTri.texCoord[1].w = 1.0f / ProjectedTri.vectors[1].w;
 				ProjectedTri.texCoord[2].w = 1.0f / ProjectedTri.vectors[2].w;
 
-				ProjectedTri.vectors[0] = DivVector(ProjectedTri.vectors[0], ProjectedTri.vectors[0].w);
-				ProjectedTri.vectors[1] = DivVector(ProjectedTri.vectors[1], ProjectedTri.vectors[1].w);
-				ProjectedTri.vectors[2] = DivVector(ProjectedTri.vectors[2], ProjectedTri.vectors[2].w);
+				ProjectedTri.vectors[0] = CalcFuncs.DivVector(ProjectedTri.vectors[0], ProjectedTri.vectors[0].w);
+				ProjectedTri.vectors[1] = CalcFuncs.DivVector(ProjectedTri.vectors[1], ProjectedTri.vectors[1].w);
+				ProjectedTri.vectors[2] = CalcFuncs.DivVector(ProjectedTri.vectors[2], ProjectedTri.vectors[2].w);
 
 				//Scaling
 				//==========================================================================================================================
 				vec3D ViewOffset = { 1.0f, 1.0f, 0.0f };
 
-				ProjectedTri.vectors[0] = AddVectors(ProjectedTri.vectors[0], ViewOffset);
-				ProjectedTri.vectors[1] = AddVectors(ProjectedTri.vectors[1], ViewOffset);
-				ProjectedTri.vectors[2] = AddVectors(ProjectedTri.vectors[2], ViewOffset);
+				ProjectedTri.vectors[0] = CalcFuncs.AddVectors(ProjectedTri.vectors[0], ViewOffset);
+				ProjectedTri.vectors[1] = CalcFuncs.AddVectors(ProjectedTri.vectors[1], ViewOffset);
+				ProjectedTri.vectors[2] = CalcFuncs.AddVectors(ProjectedTri.vectors[2], ViewOffset);
 
 				ProjectedTri.vectors[0].x *= 0.5f * (float)Graphics::Resolution.width;
 				ProjectedTri.vectors[0].y *= 0.5f * (float)Graphics::Resolution.height;
@@ -1745,22 +1767,22 @@ void Graphics::DrawMesh(mesh Mesh, Color color, ImageBuff& imageBuff)
 				{
 				case 0:
 				{
-					TriAddCount = TrianglePlaneClip({ 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+					TriAddCount = CalcFuncs.TrianglePlaneClip({ 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
 					break;
 				}
 				case 1:
 				{
-					TriAddCount = TrianglePlaneClip({ 0.0f, (float)Resolution.height - 1, 0.0f }, { 0.0f, -1.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+					TriAddCount = CalcFuncs.TrianglePlaneClip({ 0.0f, (float)Resolution.height - 1, 0.0f }, { 0.0f, -1.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
 					break;
 				}
 				case 2:
 				{
-					TriAddCount = TrianglePlaneClip({ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+					TriAddCount = CalcFuncs.TrianglePlaneClip({ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
 					break;
 				}
 				case 3:
 				{
-					TriAddCount = TrianglePlaneClip({ (float)Resolution.width - 1, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+					TriAddCount = CalcFuncs.TrianglePlaneClip({ (float)Resolution.width - 1, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
 					break;
 				}
 				}
@@ -1791,42 +1813,53 @@ void Graphics::DrawMeshFilled(mesh Mesh, Color color, ImageBuff& imageBuff, Alph
 
 	//Mesh Rotation
 	//==========================================================================================================================	
-	matrix4x4 RotXMatrix = MakeXrotationMatrix(Mesh.rotation.x);
-	matrix4x4 RotYMatrix = MakeYrotationMatrix(Mesh.rotation.y);
-	matrix4x4 RotZMatrix = MakeZrotationMatrix(Mesh.rotation.z);
+	matrix4x4 RotXMatrix;
+	matrix4x4 RotYMatrix;
+	matrix4x4 RotZMatrix;
 
-	matrix4x4 TransMatrix = MakeTranslationMatrix(Mesh.WorldPos.x, Mesh.WorldPos.z, Mesh.WorldPos.y);
+	matrix4x4 TransMatrix;
+	matrix4x4 WorldMatrix;
 
-	matrix4x4 WorldMatrix = MakeIdentityMarix();
+	Graphics::CalcFunc CalcFuncs;
 
-	WorldMatrix = MatrixMatrixMultiplication(RotZMatrix, RotXMatrix);
-	WorldMatrix = MatrixMatrixMultiplication(WorldMatrix, RotYMatrix);
-	WorldMatrix = MatrixMatrixMultiplication(WorldMatrix, TransMatrix);
+	CalcFuncs.MakeXrotationMatrix(Mesh.rotation.x, RotXMatrix);
+	CalcFuncs.MakeYrotationMatrix(Mesh.rotation.y, RotYMatrix);
+	CalcFuncs.MakeZrotationMatrix(Mesh.rotation.z, RotZMatrix);
+
+	CalcFuncs.MakeTranslationMatrix(Mesh.WorldPos.x, Mesh.WorldPos.z, Mesh.WorldPos.y, TransMatrix);
+	CalcFuncs.MakeIdentityMarix(WorldMatrix);
+
+	CalcFuncs.MatrixMatrixMultiplication(RotZMatrix, RotXMatrix, WorldMatrix);
+	CalcFuncs.MatrixMatrixMultiplication(WorldMatrix, RotYMatrix, WorldMatrix);
+	CalcFuncs.MatrixMatrixMultiplication(WorldMatrix, TransMatrix, WorldMatrix);
 	//==========================================================================================================================
 
 	vec3D target = { 0.0f,0.0f,1.0f };
 
-	matrix4x4 CamRotYMatrix = MakeYrotationMatrix(camera.TargetRot.y);
-	vec3D lookDir = MatrixVectorMultiplication(target, CamRotYMatrix);
-	target = AddVectors(Graphics::camera.GlobalPos, lookDir);
-	matrix4x4 CamMatrix = MakePointAtMatrix(Graphics::camera.GlobalPos, target, Graphics::UpVec);
+	matrix4x4 CamRotYMatrix;
+	CalcFuncs.MakeYrotationMatrix(camera.TargetRot.y, CamRotYMatrix);
+	vec3D lookDir = CalcFuncs.MatrixVectorMultiplication(target, CamRotYMatrix);
+	target = CalcFuncs.AddVectors(Graphics::camera.GlobalPos, lookDir);
+	matrix4x4 CamMatrix;
+	CalcFuncs.MakePointAtMatrix(Graphics::camera.GlobalPos, target, Graphics::UpVec, CamMatrix);
 
-	vec3D tempVec = MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.x);
-	Graphics::camera.GlobalPos = Graphics::AddVectors(Graphics::camera.GlobalPos, tempVec);
+	vec3D tempVec = CalcFuncs.MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.x);
+	Graphics::camera.GlobalPos = CalcFuncs.AddVectors(Graphics::camera.GlobalPos, tempVec);
 
 
 	target = { 1.0f, 0.0f, 0.0f };
-	lookDir = MatrixVectorMultiplication(target, CamRotYMatrix);
-	target = AddVectors(Graphics::camera.GlobalPos, lookDir);
-	CamMatrix = MakePointAtMatrix(Graphics::camera.GlobalPos, target, Graphics::UpVec);
+	lookDir = CalcFuncs.MatrixVectorMultiplication(target, CamRotYMatrix);
+	target = CalcFuncs.AddVectors(Graphics::camera.GlobalPos, lookDir);
+	CalcFuncs.MakePointAtMatrix(Graphics::camera.GlobalPos, target, Graphics::UpVec, CamMatrix);
 
-	tempVec = MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.z);
-	Graphics::camera.GlobalPos = Graphics::AddVectors(Graphics::camera.GlobalPos, tempVec);
+	tempVec = CalcFuncs.MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.z);
+	Graphics::camera.GlobalPos = CalcFuncs.AddVectors(Graphics::camera.GlobalPos, tempVec);
 
 	//Graphics::camera.GlobalPos.x += Graphics::camera.LocalPosDelta.x;
 	Graphics::camera.GlobalPos.y += Graphics::camera.LocalPosDelta.y;
 
-	matrix4x4 ViewMatrix = MatrixInvertQuick(CamMatrix);
+	matrix4x4 ViewMatrix;
+	CalcFuncs.MatrixInvertQuick(CamMatrix, ViewMatrix);
 
 	vector<triangle> TriangleToRasterVector;
 
@@ -1834,9 +1867,9 @@ void Graphics::DrawMeshFilled(mesh Mesh, Color color, ImageBuff& imageBuff, Alph
 	//==========================================================================================================================
 	for (auto tri : Mesh.tri)
 	{
-		TransformedTri.vectors[0] = MatrixVectorMultiplication(tri.vectors[0], WorldMatrix);
-		TransformedTri.vectors[1] = MatrixVectorMultiplication(tri.vectors[1], WorldMatrix);
-		TransformedTri.vectors[2] = MatrixVectorMultiplication(tri.vectors[2], WorldMatrix);
+		TransformedTri.vectors[0] = CalcFuncs.MatrixVectorMultiplication(tri.vectors[0], WorldMatrix);
+		TransformedTri.vectors[1] = CalcFuncs.MatrixVectorMultiplication(tri.vectors[1], WorldMatrix);
+		TransformedTri.vectors[2] = CalcFuncs.MatrixVectorMultiplication(tri.vectors[2], WorldMatrix);
 
 		TransformedTri.texCoord[0] = tri.texCoord[0];
 		TransformedTri.texCoord[1] = tri.texCoord[1];
@@ -1844,23 +1877,23 @@ void Graphics::DrawMeshFilled(mesh Mesh, Color color, ImageBuff& imageBuff, Alph
 
 		//Normal Calculation
 		//==========================================================================================================================
-		line1 = SubVectors(TransformedTri.vectors[1], TransformedTri.vectors[0]);
-		line2 = SubVectors(TransformedTri.vectors[2], TransformedTri.vectors[0]);
+		line1 = CalcFuncs.SubVectors(TransformedTri.vectors[1], TransformedTri.vectors[0]);
+		line2 = CalcFuncs.SubVectors(TransformedTri.vectors[2], TransformedTri.vectors[0]);
 
-		normal = CrossProd(line1, line2);
+		normal = CalcFuncs.CrossProd(line1, line2);
 
-		normal = Normalise(normal);
+		normal = CalcFuncs.Normalise(normal);
 		//==========================================================================================================================
 
-		vec3D CameraRay = SubVectors(TransformedTri.vectors[0], camera.GlobalPos);	//Get a ray from triangle to camera
+		vec3D CameraRay = CalcFuncs.SubVectors(TransformedTri.vectors[0], camera.GlobalPos);	//Get a ray from triangle to camera
 
-		if (DotProduct(normal, CameraRay) < 0.0f)
+		if (CalcFuncs.DotProduct(normal, CameraRay) < 0.0f)
 		{
 			//World to viewspace
 			//==========================================================================================================================
-			ViewedTri.vectors[1] = MatrixVectorMultiplication(TransformedTri.vectors[1], ViewMatrix);
-			ViewedTri.vectors[0] = MatrixVectorMultiplication(TransformedTri.vectors[0], ViewMatrix);
-			ViewedTri.vectors[2] = MatrixVectorMultiplication(TransformedTri.vectors[2], ViewMatrix);
+			ViewedTri.vectors[1] = CalcFuncs.MatrixVectorMultiplication(TransformedTri.vectors[1], ViewMatrix);
+			ViewedTri.vectors[0] = CalcFuncs.MatrixVectorMultiplication(TransformedTri.vectors[0], ViewMatrix);
+			ViewedTri.vectors[2] = CalcFuncs.MatrixVectorMultiplication(TransformedTri.vectors[2], ViewMatrix);
 
 			ViewedTri.texCoord[0] = TransformedTri.texCoord[0];
 			ViewedTri.texCoord[1] = TransformedTri.texCoord[1];
@@ -1873,7 +1906,7 @@ void Graphics::DrawMeshFilled(mesh Mesh, Color color, ImageBuff& imageBuff, Alph
 			uint8_t ClippedTriCount = 0;
 			triangle ClippedTri[2];
 
-			ClippedTriCount = TrianglePlaneClip({ 0.0f, 0.0f, 0.1f }, { 0.0f, 0.0f, 1.0f }, ViewedTri, ClippedTri[0], ClippedTri[1]);
+			ClippedTriCount = CalcFuncs.TrianglePlaneClip({ 0.0f, 0.0f, 0.1f }, { 0.0f, 0.0f, 1.0f }, ViewedTri, ClippedTri[0], ClippedTri[1]);
 			//==========================================================================================================================
 
 			for (uint8_t n = 0; n < ClippedTriCount; n++)
@@ -1883,18 +1916,18 @@ void Graphics::DrawMeshFilled(mesh Mesh, Color color, ImageBuff& imageBuff, Alph
 				//==========================================================================================================================
 				//Normalize light
 				vec3D LightDirGlobal = { Graphics::globalLight.Direction.x, Graphics::globalLight.Direction.y, Graphics::globalLight.Direction.z };
-				LightDirGlobal = Normalise(LightDirGlobal);
+				LightDirGlobal = CalcFuncs.Normalise(LightDirGlobal);
 
-				float DotProduct = max(0.1f, Graphics::DotProduct(LightDirGlobal, normal));
+				float DotProduct = max(0.1f, CalcFuncs.DotProduct(LightDirGlobal, normal));
 
 				ProjectedTri.color = { ClippedTri[n].color.r * DotProduct, ClippedTri[n].color.g * DotProduct, ClippedTri[n].color.b * DotProduct, ClippedTri[n].color.a };
 				//==========================================================================================================================
 
 				//Projection Matrix Multiplication
 				//==========================================================================================================================
-				ProjectedTri.vectors[0] = MatrixVectorMultiplication(ClippedTri[n].vectors[0], Graphics::ProjMatrix);
-				ProjectedTri.vectors[1] = MatrixVectorMultiplication(ClippedTri[n].vectors[1], Graphics::ProjMatrix);
-				ProjectedTri.vectors[2] = MatrixVectorMultiplication(ClippedTri[n].vectors[2], Graphics::ProjMatrix);
+				ProjectedTri.vectors[0] = CalcFuncs.MatrixVectorMultiplication(ClippedTri[n].vectors[0], Graphics::ProjMatrix);
+				ProjectedTri.vectors[1] = CalcFuncs.MatrixVectorMultiplication(ClippedTri[n].vectors[1], Graphics::ProjMatrix);
+				ProjectedTri.vectors[2] = CalcFuncs.MatrixVectorMultiplication(ClippedTri[n].vectors[2], Graphics::ProjMatrix);
 				//==========================================================================================================================
 
 				ProjectedTri.texCoord[0] = ClippedTri[n].texCoord[0];
@@ -1913,17 +1946,17 @@ void Graphics::DrawMeshFilled(mesh Mesh, Color color, ImageBuff& imageBuff, Alph
 				ProjectedTri.texCoord[1].w = 1.0f / ProjectedTri.vectors[1].w;
 				ProjectedTri.texCoord[2].w = 1.0f / ProjectedTri.vectors[2].w;
 
-				ProjectedTri.vectors[0] = DivVector(ProjectedTri.vectors[0], ProjectedTri.vectors[0].w);
-				ProjectedTri.vectors[1] = DivVector(ProjectedTri.vectors[1], ProjectedTri.vectors[1].w);
-				ProjectedTri.vectors[2] = DivVector(ProjectedTri.vectors[2], ProjectedTri.vectors[2].w);
+				ProjectedTri.vectors[0] = CalcFuncs.DivVector(ProjectedTri.vectors[0], ProjectedTri.vectors[0].w);
+				ProjectedTri.vectors[1] = CalcFuncs.DivVector(ProjectedTri.vectors[1], ProjectedTri.vectors[1].w);
+				ProjectedTri.vectors[2] = CalcFuncs.DivVector(ProjectedTri.vectors[2], ProjectedTri.vectors[2].w);
 
 				//Scaling
 				//==========================================================================================================================
 				vec3D ViewOffset = { 1.0f, 1.0f, 0.0f };
 
-				ProjectedTri.vectors[0] = AddVectors(ProjectedTri.vectors[0], ViewOffset);
-				ProjectedTri.vectors[1] = AddVectors(ProjectedTri.vectors[1], ViewOffset);
-				ProjectedTri.vectors[2] = AddVectors(ProjectedTri.vectors[2], ViewOffset);
+				ProjectedTri.vectors[0] = CalcFuncs.AddVectors(ProjectedTri.vectors[0], ViewOffset);
+				ProjectedTri.vectors[1] = CalcFuncs.AddVectors(ProjectedTri.vectors[1], ViewOffset);
+				ProjectedTri.vectors[2] = CalcFuncs.AddVectors(ProjectedTri.vectors[2], ViewOffset);
 
 				ProjectedTri.vectors[0].x *= 0.5f * (float)Graphics::Resolution.width;
 				ProjectedTri.vectors[0].y *= 0.5f * (float)Graphics::Resolution.height;
@@ -1968,22 +2001,22 @@ void Graphics::DrawMeshFilled(mesh Mesh, Color color, ImageBuff& imageBuff, Alph
 				{
 				case 0:
 				{
-					TriAddCount = TrianglePlaneClip({ 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+					TriAddCount = CalcFuncs.TrianglePlaneClip({ 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
 					break;
 				}
 				case 1:
 				{
-					TriAddCount = TrianglePlaneClip({ 0.0f, (float)Resolution.height - 1, 0.0f }, { 0.0f, -1.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+					TriAddCount = CalcFuncs.TrianglePlaneClip({ 0.0f, (float)Resolution.height - 1, 0.0f }, { 0.0f, -1.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
 					break;
 				}
 				case 2:
 				{
-					TriAddCount = TrianglePlaneClip({ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+					TriAddCount = CalcFuncs.TrianglePlaneClip({ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
 					break;
 				}
 				case 3:
 				{
-					TriAddCount = TrianglePlaneClip({ (float)Resolution.width - 1, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+					TriAddCount = CalcFuncs.TrianglePlaneClip({ (float)Resolution.width - 1, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
 					break;
 				}
 				}
@@ -2011,44 +2044,59 @@ void Graphics::DrawMeshTextured(mesh Mesh, BitMap& texture, ImageBuff& imageBuff
 	vec3D line1;
 	vec3D line2;
 
+	uint32_t CoreCount = systemInfo.dwNumberOfProcessors;
+
+	vector<std::thread> threadList;
+
 	//Mesh Rotation
 	//==========================================================================================================================	
-	matrix4x4 RotXMatrix = MakeXrotationMatrix(Mesh.rotation.x);
-	matrix4x4 RotYMatrix = MakeYrotationMatrix(Mesh.rotation.y);
-	matrix4x4 RotZMatrix = MakeZrotationMatrix(Mesh.rotation.z);
+	matrix4x4 RotXMatrix = { 0 };
+	matrix4x4 RotYMatrix = { 0 };
+	matrix4x4 RotZMatrix = { 0 };
+	
+	matrix4x4 TransMatrix;
+	matrix4x4 WorldMatrix;
 
-	matrix4x4 TransMatrix = MakeTranslationMatrix(Mesh.WorldPos.x, Mesh.WorldPos.z, Mesh.WorldPos.y);
+	CalcFunc CalcFuncs;
 
-	matrix4x4 WorldMatrix = MakeIdentityMarix();
+	CalcFuncs.MakeXrotationMatrix(std::ref(Mesh.rotation.x), std::ref(RotXMatrix));
+	CalcFuncs.MakeYrotationMatrix(std::ref(Mesh.rotation.y), std::ref(RotYMatrix));
+	CalcFuncs.MakeZrotationMatrix(std::ref(Mesh.rotation.z), std::ref(RotZMatrix));
 
-	WorldMatrix = MatrixMatrixMultiplication(RotZMatrix, RotXMatrix);
-	WorldMatrix = MatrixMatrixMultiplication(WorldMatrix, RotYMatrix);
-	WorldMatrix = MatrixMatrixMultiplication(WorldMatrix, TransMatrix);
+	CalcFuncs.MakeTranslationMatrix(Mesh.WorldPos.x, Mesh.WorldPos.z, Mesh.WorldPos.y, TransMatrix);
+	CalcFuncs.MakeIdentityMarix(WorldMatrix);
+
+	CalcFuncs.MatrixMatrixMultiplication(RotZMatrix, RotXMatrix, WorldMatrix);
+	CalcFuncs.MatrixMatrixMultiplication(WorldMatrix, RotYMatrix, WorldMatrix);
+	CalcFuncs.MatrixMatrixMultiplication(WorldMatrix, TransMatrix, WorldMatrix);
 	//==========================================================================================================================
 
 	vec3D target = { 0.0f,0.0f,1.0f };
 
-	matrix4x4 CamRotYMatrix = MakeYrotationMatrix(camera.TargetRot.y);
-	vec3D lookDir = MatrixVectorMultiplication(target, CamRotYMatrix);
-	target = AddVectors(Graphics::camera.GlobalPos, lookDir);
-	matrix4x4 CamMatrix = MakePointAtMatrix(Graphics::camera.GlobalPos, target, Graphics::UpVec);
+	matrix4x4 CamRotYMatrix;
+	CalcFuncs.MakeYrotationMatrix(camera.TargetRot.y, CamRotYMatrix);
+	vec3D lookDir = CalcFuncs.MatrixVectorMultiplication(target, CamRotYMatrix);
+	target = CalcFuncs.AddVectors(Graphics::camera.GlobalPos, lookDir);
+	matrix4x4 CamMatrix;
+	CalcFuncs.MakePointAtMatrix(Graphics::camera.GlobalPos, target, Graphics::UpVec, CamMatrix);
 
-	vec3D tempVec = MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.x);
-	Graphics::camera.GlobalPos = Graphics::AddVectors(Graphics::camera.GlobalPos, tempVec);
+	vec3D tempVec = CalcFuncs.MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.x);
+	Graphics::camera.GlobalPos = CalcFuncs.AddVectors(Graphics::camera.GlobalPos, tempVec);
 
 
 	target = { 1.0f, 0.0f, 0.0f };
-	lookDir = MatrixVectorMultiplication(target, CamRotYMatrix);
-	target = AddVectors(Graphics::camera.GlobalPos, lookDir);
-	CamMatrix = MakePointAtMatrix(Graphics::camera.GlobalPos, target, Graphics::UpVec);
+	lookDir = CalcFuncs.MatrixVectorMultiplication(target, CamRotYMatrix);
+	target = CalcFuncs.AddVectors(Graphics::camera.GlobalPos, lookDir);
+	CalcFuncs.MakePointAtMatrix(Graphics::camera.GlobalPos, target, Graphics::UpVec, CamMatrix);
 
-	tempVec = MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.z);
-	Graphics::camera.GlobalPos = Graphics::AddVectors(Graphics::camera.GlobalPos, tempVec);
+	tempVec = CalcFuncs.MultVectorFloat(lookDir, Graphics::camera.LocalPosDelta.z);
+	Graphics::camera.GlobalPos = CalcFuncs.AddVectors(Graphics::camera.GlobalPos, tempVec);
 
 	//Graphics::camera.GlobalPos.x += Graphics::camera.LocalPosDelta.x;
 	Graphics::camera.GlobalPos.y += Graphics::camera.LocalPosDelta.y;
 
-	matrix4x4 ViewMatrix = MatrixInvertQuick(CamMatrix);
+	matrix4x4 ViewMatrix;
+	CalcFuncs.MatrixInvertQuick(CamMatrix, ViewMatrix);
 
 	vector<triangle> TriangleToRasterVector;
 
@@ -2056,9 +2104,9 @@ void Graphics::DrawMeshTextured(mesh Mesh, BitMap& texture, ImageBuff& imageBuff
 	//==========================================================================================================================
 	for (auto tri : Mesh.tri)
 	{
-		TransformedTri.vectors[0] = MatrixVectorMultiplication(tri.vectors[0], WorldMatrix);
-		TransformedTri.vectors[1] = MatrixVectorMultiplication(tri.vectors[1], WorldMatrix);
-		TransformedTri.vectors[2] = MatrixVectorMultiplication(tri.vectors[2], WorldMatrix);
+		TransformedTri.vectors[0] = CalcFuncs.MatrixVectorMultiplication(tri.vectors[0], WorldMatrix);
+		TransformedTri.vectors[1] = CalcFuncs.MatrixVectorMultiplication(tri.vectors[1], WorldMatrix);
+		TransformedTri.vectors[2] = CalcFuncs.MatrixVectorMultiplication(tri.vectors[2], WorldMatrix);
 
 		TransformedTri.texCoord[0] = tri.texCoord[0];
 		TransformedTri.texCoord[1] = tri.texCoord[1];
@@ -2066,23 +2114,23 @@ void Graphics::DrawMeshTextured(mesh Mesh, BitMap& texture, ImageBuff& imageBuff
 
 		//Normal Calculation
 		//==========================================================================================================================
-		line1 = SubVectors(TransformedTri.vectors[1], TransformedTri.vectors[0]);
-		line2 = SubVectors(TransformedTri.vectors[2], TransformedTri.vectors[0]);
+		line1 = CalcFuncs.SubVectors(TransformedTri.vectors[1], TransformedTri.vectors[0]);
+		line2 = CalcFuncs.SubVectors(TransformedTri.vectors[2], TransformedTri.vectors[0]);
 
-		normal = CrossProd(line1, line2);
+		normal = CalcFuncs.CrossProd(line1, line2);
 
-		normal = Normalise(normal);
+		normal = CalcFuncs.Normalise(normal);
 		//==========================================================================================================================
 
-		vec3D CameraRay = SubVectors(TransformedTri.vectors[0], camera.GlobalPos);	//Get a ray from triangle to camera
+		vec3D CameraRay = CalcFuncs.SubVectors(TransformedTri.vectors[0], camera.GlobalPos);	//Get a ray from triangle to camera
 
-		if (DotProduct(normal, CameraRay) < 0.0f)
+		if (CalcFuncs.DotProduct(normal, CameraRay) < 0.0f)
 		{
 			//World to viewspace
 			//==========================================================================================================================
-			ViewedTri.vectors[1] = MatrixVectorMultiplication(TransformedTri.vectors[1], ViewMatrix);
-			ViewedTri.vectors[0] = MatrixVectorMultiplication(TransformedTri.vectors[0], ViewMatrix);
-			ViewedTri.vectors[2] = MatrixVectorMultiplication(TransformedTri.vectors[2], ViewMatrix);
+			ViewedTri.vectors[1] = CalcFuncs.MatrixVectorMultiplication(TransformedTri.vectors[1], ViewMatrix);
+			ViewedTri.vectors[0] = CalcFuncs.MatrixVectorMultiplication(TransformedTri.vectors[0], ViewMatrix);
+			ViewedTri.vectors[2] = CalcFuncs.MatrixVectorMultiplication(TransformedTri.vectors[2], ViewMatrix);
 
 			ViewedTri.texCoord[0] = TransformedTri.texCoord[0];
 			ViewedTri.texCoord[1] = TransformedTri.texCoord[1];
@@ -2095,7 +2143,7 @@ void Graphics::DrawMeshTextured(mesh Mesh, BitMap& texture, ImageBuff& imageBuff
 			uint8_t ClippedTriCount = 0;
 			triangle ClippedTri[2];
 
-			ClippedTriCount = TrianglePlaneClip({ 0.0f, 0.0f, 0.1f }, { 0.0f, 0.0f, 1.0f }, ViewedTri, ClippedTri[0], ClippedTri[1]);
+			ClippedTriCount = CalcFuncs.TrianglePlaneClip({ 0.0f, 0.0f, 0.1f }, { 0.0f, 0.0f, 1.0f }, ViewedTri, ClippedTri[0], ClippedTri[1]);
 			//==========================================================================================================================
 
 			for (uint8_t n = 0; n < ClippedTriCount; n++)
@@ -2105,18 +2153,18 @@ void Graphics::DrawMeshTextured(mesh Mesh, BitMap& texture, ImageBuff& imageBuff
 				//==========================================================================================================================
 				//Normalize light
 				vec3D LightDirGlobal = { Graphics::globalLight.Direction.x, Graphics::globalLight.Direction.y, Graphics::globalLight.Direction.z };
-				LightDirGlobal = Normalise(LightDirGlobal);
+				LightDirGlobal = CalcFuncs.Normalise(LightDirGlobal);
 
-				float DotProduct = max(0.1f, Graphics::DotProduct(LightDirGlobal, normal));
+				float DotProduct = max(0.1f, CalcFuncs.DotProduct(LightDirGlobal, normal));
 
 				ProjectedTri.color = { ClippedTri[n].color.r * DotProduct, ClippedTri[n].color.g * DotProduct, ClippedTri[n].color.b * DotProduct, ClippedTri[n].color.a };
 				//==========================================================================================================================
 
 				//Projection Matrix Multiplication
 				//==========================================================================================================================
-				ProjectedTri.vectors[0] = MatrixVectorMultiplication(ClippedTri[n].vectors[0], Graphics::ProjMatrix);
-				ProjectedTri.vectors[1] = MatrixVectorMultiplication(ClippedTri[n].vectors[1], Graphics::ProjMatrix);
-				ProjectedTri.vectors[2] = MatrixVectorMultiplication(ClippedTri[n].vectors[2], Graphics::ProjMatrix);
+				ProjectedTri.vectors[0] = CalcFuncs.MatrixVectorMultiplication(ClippedTri[n].vectors[0], Graphics::ProjMatrix);
+				ProjectedTri.vectors[1] = CalcFuncs.MatrixVectorMultiplication(ClippedTri[n].vectors[1], Graphics::ProjMatrix);
+				ProjectedTri.vectors[2] = CalcFuncs.MatrixVectorMultiplication(ClippedTri[n].vectors[2], Graphics::ProjMatrix);
 				//==========================================================================================================================
 
 				ProjectedTri.texCoord[0] = ClippedTri[n].texCoord[0];
@@ -2135,17 +2183,17 @@ void Graphics::DrawMeshTextured(mesh Mesh, BitMap& texture, ImageBuff& imageBuff
 				ProjectedTri.texCoord[1].w = 1.0f / ProjectedTri.vectors[1].w;
 				ProjectedTri.texCoord[2].w = 1.0f / ProjectedTri.vectors[2].w;
 
-				ProjectedTri.vectors[0] = DivVector(ProjectedTri.vectors[0], ProjectedTri.vectors[0].w);
-				ProjectedTri.vectors[1] = DivVector(ProjectedTri.vectors[1], ProjectedTri.vectors[1].w);
-				ProjectedTri.vectors[2] = DivVector(ProjectedTri.vectors[2], ProjectedTri.vectors[2].w);
+				ProjectedTri.vectors[0] = CalcFuncs.DivVector(ProjectedTri.vectors[0], ProjectedTri.vectors[0].w);
+				ProjectedTri.vectors[1] = CalcFuncs.DivVector(ProjectedTri.vectors[1], ProjectedTri.vectors[1].w);
+				ProjectedTri.vectors[2] = CalcFuncs.DivVector(ProjectedTri.vectors[2], ProjectedTri.vectors[2].w);
 
 				//Scaling
 				//==========================================================================================================================
 				vec3D ViewOffset = { 1.0f, 1.0f, 0.0f };
 
-				ProjectedTri.vectors[0] = AddVectors(ProjectedTri.vectors[0], ViewOffset);
-				ProjectedTri.vectors[1] = AddVectors(ProjectedTri.vectors[1], ViewOffset);
-				ProjectedTri.vectors[2] = AddVectors(ProjectedTri.vectors[2], ViewOffset);
+				ProjectedTri.vectors[0] = CalcFuncs.AddVectors(ProjectedTri.vectors[0], ViewOffset);
+				ProjectedTri.vectors[1] = CalcFuncs.AddVectors(ProjectedTri.vectors[1], ViewOffset);
+				ProjectedTri.vectors[2] = CalcFuncs.AddVectors(ProjectedTri.vectors[2], ViewOffset);
 
 				ProjectedTri.vectors[0].x *= 0.5f * (float)Graphics::Resolution.width;
 				ProjectedTri.vectors[0].y *= 0.5f * (float)Graphics::Resolution.height;
@@ -2190,22 +2238,22 @@ void Graphics::DrawMeshTextured(mesh Mesh, BitMap& texture, ImageBuff& imageBuff
 				{
 				case 0:
 				{
-					TriAddCount = TrianglePlaneClip({ 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+					TriAddCount = CalcFuncs.TrianglePlaneClip({ 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
 					break;
 				}
 				case 1:
 				{
-					TriAddCount = TrianglePlaneClip({ 0.0f, (float)Resolution.height - 1, 0.0f }, { 0.0f, -1.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+					TriAddCount = CalcFuncs.TrianglePlaneClip({ 0.0f, (float)Resolution.height - 1, 0.0f }, { 0.0f, -1.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
 					break;
 				}
 				case 2:
 				{
-					TriAddCount = TrianglePlaneClip({ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+					TriAddCount = CalcFuncs.TrianglePlaneClip({ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
 					break;
 				}
 				case 3:
 				{
-					TriAddCount = TrianglePlaneClip({ (float)Resolution.width - 1, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
+					TriAddCount = CalcFuncs.TrianglePlaneClip({ (float)Resolution.width - 1, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }, testTri, clippedTri[0], clippedTri[1]);
 					break;
 				}
 				}
@@ -2217,18 +2265,17 @@ void Graphics::DrawMeshTextured(mesh Mesh, BitMap& texture, ImageBuff& imageBuff
 		}
 		for (auto& Tri : TriangleList)
 		{
-			Color col = { 0,0,0,0 };
 			//DrawTriangle2filled(Tri, Tri.color, imageBuff, AlphaDepthBuff);
 			DrawTriangletextured(Tri, texture, imageBuff, AlphaDepthBuff);
-			
 		}
 	}
 	//==========================================================================================================================
 };
 
-void Graphics::refresh(ImageBuff& imageBuff)
+void Graphics::RefreshThreadProc::refresh(ID2D1HwndRenderTarget* rendertarget, ImageBuff& imageBuff)
 {
-	BeginDraw();
+	ID2D1Bitmap* BufferBmp;
+
 
 	//Create Bitmap
 	//==========================================================================================================================
@@ -2242,21 +2289,74 @@ void Graphics::refresh(ImageBuff& imageBuff)
 
 	D2D1_RECT_F rect = D2D1::RectF(0.0f, 0.0f, imageBuff.width, imageBuff.height);
 	D2D1_SIZE_U size = D2D1::SizeU(imageBuff.width, imageBuff.height);
-	HRESULT hr = rendertarget->CreateBitmap(size, imageBuff.PixelsPtr, imageBuff.width * 4, Properties, &BufferBmp);
+	HRESULT hr = rendertarget->CreateBitmap(size, imageBuff.SecPixelsPtr, imageBuff.width * 4, Properties, &BufferBmp);
 	//==========================================================================================================================
 
 	//Copy Buffer to Bitmap
 	//==========================================================================================================================
 	D2D1_RECT_U CopyRect = D2D1::RectU(0, 0, imageBuff.width, imageBuff.height);
 
-	BufferBmp->CopyFromMemory(&CopyRect, imageBuff.PixelsPtr, imageBuff.width * 4);
+	BufferBmp->CopyFromMemory(&CopyRect, imageBuff.SecPixelsPtr, imageBuff.width * 4);
 	//==========================================================================================================================
 
+	rendertarget->BeginDraw();
 	//Draw Bitmap
 	//==========================================================================================================================
 	rendertarget->DrawBitmap(BufferBmp, rect);
 	//==========================================================================================================================
 	BufferBmp->Release();
 
-	EndDraw();
+	rendertarget->EndDraw();
+}
+
+void Graphics::refresh(ImageBuff& imageBuff)
+{
+	RefreshThreadProc RefreshProc;
+	//if (refreshThread.joinable())
+	//{
+	//	refreshThread.join();
+	//}
+	//else
+	//{
+	//	refreshThread = std::thread(&Graphics::RefreshThreadProc::refresh, &RefreshProc, std::ref(rendertarget), std::ref(TempImageBuff));
+	//}
+	uint32_t counter = 0;
+
+	for (counter = 0; counter < imageBuff.width * imageBuff.height; counter++)
+	{
+		imageBuff.SecPixelsPtr[counter] = imageBuff.PixelsPtr[counter];
+	}
+
+	std::thread(&Graphics::RefreshThreadProc::refresh, &RefreshProc, std::ref(rendertarget), std::ref(imageBuff)).detach();
+
+	//BeginDraw();
+	////Create Bitmap
+	////==========================================================================================================================
+	//D2D1_PIXEL_FORMAT PixForm = D2D1::PixelFormat();
+	//PixForm.format = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+	//PixForm.alphaMode = D2D1_ALPHA_MODE_IGNORE;
+	//
+	//D2D1_BITMAP_PROPERTIES Properties = D2D1::BitmapProperties();
+	//rendertarget->GetDpi(&Properties.dpiX, &Properties.dpiY);
+	//Properties.pixelFormat = PixForm;
+	//
+	//D2D1_RECT_F rect = D2D1::RectF(0.0f, 0.0f, imageBuff.width, imageBuff.height);
+	//D2D1_SIZE_U size = D2D1::SizeU(imageBuff.width, imageBuff.height);
+	//HRESULT hr = rendertarget->CreateBitmap(size, imageBuff.PixelsPtr, imageBuff.width * 4, Properties, &BufferBmp);
+	////==========================================================================================================================
+	//
+	////Copy Buffer to Bitmap
+	////==========================================================================================================================
+	//D2D1_RECT_U CopyRect = D2D1::RectU(0, 0, imageBuff.width, imageBuff.height);
+	//
+	//BufferBmp->CopyFromMemory(&CopyRect, imageBuff.PixelsPtr, imageBuff.width * 4);
+	////==========================================================================================================================
+	//
+	////Draw Bitmap
+	////==========================================================================================================================
+	//rendertarget->DrawBitmap(BufferBmp, rect);
+	////==========================================================================================================================
+	//BufferBmp->Release();
+	//
+	//EndDraw();
 }

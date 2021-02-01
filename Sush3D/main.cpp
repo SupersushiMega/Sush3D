@@ -200,7 +200,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 			graphics->DrawBMP(BMPDrawTest, 600, 780, imageBuffer, AlphaDepthBuffer);
 			graphics->DrawSprite3D(RobotSprite, ZeroPos, imageBuffer, AlphaDepthBuffer, 20, 20);
 
-			sprintf_s(Buffer, "Sush3D \nVersion : Development_2Din3D_Sprite\nX = %f \nY = %f \nZ = %f \n~FPS = %d", X, Y, Z, FPS);
+			sprintf_s(Buffer, "Sush3D \nVersion : Development_Multithreading\nX = %f \nY = %f \nZ = %f \n~FPS = %d", X, Y, Z, FPS);
 
 			graphics->DrawString(Buffer, 0, 0, color, imageBuffer);
 
