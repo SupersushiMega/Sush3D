@@ -99,6 +99,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 	BMPDrawTest.LoadBitmapRGB("BMPDrawTest.bmp");
 	BMPDrawTest.LoadBitmapAlpha("BMPDrawTestAlpha.bmp");
 
+	Graphics::BitMap RobotSprite;
+	RobotSprite.LoadBitmapRGB("RobotSpriteTest.bmp");
+	RobotSprite.LoadBitmapAlpha("RobotSpriteTestAlpha.bmp");
+
+	Graphics::vec3D ZeroPos = { 0.0f, 0.0f, 0.0f };
+
 	uint8_t frame = 0;
 
 	uint16_t FPS = 0;
@@ -192,6 +198,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 			graphics->DrawMeshTextured(Suzzane, SuzzaneBMP, imageBuffer, AlphaDepthBuffer);
 			graphics->DrawMeshTextured(terrain, terrainBMP, imageBuffer, AlphaDepthBuffer);
 			graphics->DrawBMP(BMPDrawTest, 600, 780, imageBuffer, AlphaDepthBuffer);
+			graphics->DrawSprite3D(RobotSprite, ZeroPos, imageBuffer, AlphaDepthBuffer, 20, 20);
 
 			sprintf_s(Buffer, "Sush3D \nVersion : Development_2Din3D_Sprite\nX = %f \nY = %f \nZ = %f \n~FPS = %d", X, Y, Z, FPS);
 

@@ -1525,22 +1525,38 @@ void Graphics::DrawSprite3D(BitMap& sprite, vec3D& WorldPos, ImageBuff& imageBuf
 		sizeY = sprite.MapResolution.height;
 	}
 
+	Color color = { 1.0f, 0.0f, 1.0f };
+
 	vec3D target = { 0.0f,0.0f,1.0f };
 
-	//Translation
-	//==========================================================================================================================	
-	matrix4x4 TransMatrix = MakeTranslationMatrix(WorldPos.x, WorldPos.z, WorldPos.y);	//create translation Matrix
+	mesh Mesh;
 
-	//Creating the WorldMatrix
-	matrix4x4 WorldMatrix = MakeIdentityMarix();
-	WorldMatrix = MatrixMatrixMultiplication(WorldMatrix, TransMatrix);
-	//==========================================================================================================================	
+	Mesh.tri = {{0.0f}, {0.0f}};
+
+	Mesh.tri[0].vectors[0] = { 0.0f, 0.0f, -1.0f };
+	Mesh.tri[0].vectors[1] = { 0.0f, 2.0f, 1.0f };
+	Mesh.tri[0].vectors[2] = { 0.0f, 2.0f, -1.0f };
+
+	Mesh.tri[1].vectors[0] = { 0.0f, 0.0f, -1.0f };
+	Mesh.tri[1].vectors[1] = { 0.0f, 0.0f, 1.0f };
+	Mesh.tri[1].vectors[2] = { 0.0f, 2.0f, 1.0f };
+
+	Mesh.tri[0].texCoord[0] = { 0.0f, 0.0f };
+	Mesh.tri[0].texCoord[1] = { 1.0f, 1.0f };
+	Mesh.tri[0].texCoord[2] = { 0.0f, 1.0f };
+
+	Mesh.tri[1].texCoord[0] = { 0.0f, 0.0f };
+	Mesh.tri[1].texCoord[1] = { 1.0f, 0.0f };
+	Mesh.tri[1].texCoord[2] = { 1.0f, 1.0f };
+
+	Mesh.WorldPos = WorldPos;
+	Mesh.rotation.y = camera.TargetRot.y;
 
 
-
+	DrawMeshTextured(Mesh, sprite, imageBuff, AlphaDepthBuff);
 }
 
-void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff)
+void Graphics::DrawMesh(mesh Mesh, Color color, ImageBuff& imageBuff)
 {
 	triangle TransformedTri;
 	triangle ViewedTri;
@@ -1552,11 +1568,11 @@ void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff)
 
 	//Mesh Rotation
 	//==========================================================================================================================	
-	matrix4x4 RotXMatrix = MakeXrotationMatrix(mesh.rotation.x);
-	matrix4x4 RotYMatrix = MakeYrotationMatrix(mesh.rotation.y);
-	matrix4x4 RotZMatrix = MakeZrotationMatrix(mesh.rotation.z);
+	matrix4x4 RotXMatrix = MakeXrotationMatrix(Mesh.rotation.x);
+	matrix4x4 RotYMatrix = MakeYrotationMatrix(Mesh.rotation.y);
+	matrix4x4 RotZMatrix = MakeZrotationMatrix(Mesh.rotation.z);
 
-	matrix4x4 TransMatrix = MakeTranslationMatrix(mesh.WorldPos.x, mesh.WorldPos.z, mesh.WorldPos.y);
+	matrix4x4 TransMatrix = MakeTranslationMatrix(Mesh.WorldPos.x, Mesh.WorldPos.z, Mesh.WorldPos.y);
 
 	matrix4x4 WorldMatrix = MakeIdentityMarix();
 	
@@ -1593,7 +1609,7 @@ void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff)
 
 	//Draw Triangles
 	//==========================================================================================================================
-	for (auto tri : mesh.tri)
+	for (auto tri : Mesh.tri)
 	{
 		TransformedTri.vectors[0] = MatrixVectorMultiplication(tri.vectors[0], WorldMatrix);
 		TransformedTri.vectors[1] = MatrixVectorMultiplication(tri.vectors[1], WorldMatrix);
@@ -1763,7 +1779,7 @@ void Graphics::DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff)
 };
 
 
-void Graphics::DrawMeshFilled(mesh mesh, Color color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff)
+void Graphics::DrawMeshFilled(mesh Mesh, Color color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff)
 {
 	triangle TransformedTri;
 	triangle ViewedTri;
@@ -1775,11 +1791,11 @@ void Graphics::DrawMeshFilled(mesh mesh, Color color, ImageBuff& imageBuff, Alph
 
 	//Mesh Rotation
 	//==========================================================================================================================	
-	matrix4x4 RotXMatrix = MakeXrotationMatrix(mesh.rotation.x);
-	matrix4x4 RotYMatrix = MakeYrotationMatrix(mesh.rotation.y);
-	matrix4x4 RotZMatrix = MakeZrotationMatrix(mesh.rotation.z);
+	matrix4x4 RotXMatrix = MakeXrotationMatrix(Mesh.rotation.x);
+	matrix4x4 RotYMatrix = MakeYrotationMatrix(Mesh.rotation.y);
+	matrix4x4 RotZMatrix = MakeZrotationMatrix(Mesh.rotation.z);
 
-	matrix4x4 TransMatrix = MakeTranslationMatrix(mesh.WorldPos.x, mesh.WorldPos.z, mesh.WorldPos.y);
+	matrix4x4 TransMatrix = MakeTranslationMatrix(Mesh.WorldPos.x, Mesh.WorldPos.z, Mesh.WorldPos.y);
 
 	matrix4x4 WorldMatrix = MakeIdentityMarix();
 
@@ -1816,7 +1832,7 @@ void Graphics::DrawMeshFilled(mesh mesh, Color color, ImageBuff& imageBuff, Alph
 
 	//Draw Triangles
 	//==========================================================================================================================
-	for (auto tri : mesh.tri)
+	for (auto tri : Mesh.tri)
 	{
 		TransformedTri.vectors[0] = MatrixVectorMultiplication(tri.vectors[0], WorldMatrix);
 		TransformedTri.vectors[1] = MatrixVectorMultiplication(tri.vectors[1], WorldMatrix);
@@ -1985,7 +2001,7 @@ void Graphics::DrawMeshFilled(mesh mesh, Color color, ImageBuff& imageBuff, Alph
 	//==========================================================================================================================
 };
 
-void Graphics::DrawMeshTextured(mesh mesh, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff)
+void Graphics::DrawMeshTextured(mesh Mesh, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff)
 {
 	triangle TransformedTri;
 	triangle ViewedTri;
@@ -1997,11 +2013,11 @@ void Graphics::DrawMeshTextured(mesh mesh, BitMap& texture, ImageBuff& imageBuff
 
 	//Mesh Rotation
 	//==========================================================================================================================	
-	matrix4x4 RotXMatrix = MakeXrotationMatrix(mesh.rotation.x);
-	matrix4x4 RotYMatrix = MakeYrotationMatrix(mesh.rotation.y);
-	matrix4x4 RotZMatrix = MakeZrotationMatrix(mesh.rotation.z);
+	matrix4x4 RotXMatrix = MakeXrotationMatrix(Mesh.rotation.x);
+	matrix4x4 RotYMatrix = MakeYrotationMatrix(Mesh.rotation.y);
+	matrix4x4 RotZMatrix = MakeZrotationMatrix(Mesh.rotation.z);
 
-	matrix4x4 TransMatrix = MakeTranslationMatrix(mesh.WorldPos.x, mesh.WorldPos.z, mesh.WorldPos.y);
+	matrix4x4 TransMatrix = MakeTranslationMatrix(Mesh.WorldPos.x, Mesh.WorldPos.z, Mesh.WorldPos.y);
 
 	matrix4x4 WorldMatrix = MakeIdentityMarix();
 
@@ -2038,7 +2054,7 @@ void Graphics::DrawMeshTextured(mesh mesh, BitMap& texture, ImageBuff& imageBuff
 
 	//Draw Triangles
 	//==========================================================================================================================
-	for (auto tri : mesh.tri)
+	for (auto tri : Mesh.tri)
 	{
 		TransformedTri.vectors[0] = MatrixVectorMultiplication(tri.vectors[0], WorldMatrix);
 		TransformedTri.vectors[1] = MatrixVectorMultiplication(tri.vectors[1], WorldMatrix);

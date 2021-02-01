@@ -221,11 +221,11 @@ public:
 	void DrawString(string String, uint16_t startX, uint16_t startY, Color& col, ImageBuff& imageBuff, uint8_t scaleX = 8, uint8_t scaleY = 15);
 	
 	//3D:
-	void DrawSprite3D(BitMap &sprite, vec3D &WorldPos, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff, uint16_t sizeX = 0, uint16_t sizeY = 0);	//Draws a 2D sprite in 3D space, similar to Wolfenstein3D or the original Doom. if size values are 0 image resolution will be used
+	void DrawSprite3D(BitMap& sprite, vec3D& WorldPos, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff, uint16_t sizeX, uint16_t sizeY);	//Draws a 2D sprite in 3D space, similar to Wolfenstein3D or the original Doom. if size values are 0 image resolution will be used
 
-	void DrawMesh(mesh mesh, Color color, ImageBuff& imageBuff);
-	void DrawMeshFilled(mesh mesh, Color color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
-	void DrawMeshTextured(mesh mesh, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
+	void DrawMesh(mesh Mesh, Color color, ImageBuff& imageBuff);
+	void DrawMeshFilled(mesh Mesh, Color color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
+	void DrawMeshTextured(mesh Mesh, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
 
 	//Other
 	void ClearScreen(float r, float g, float b, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
