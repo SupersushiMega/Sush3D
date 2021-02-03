@@ -27,6 +27,7 @@ class Graphics
 	SYSTEM_INFO systemInfo;
 
 	std::thread refreshThread;
+	bool threadComplete = true;
 
 	float* Alpha_DepthBuffer;
 
@@ -240,11 +241,11 @@ public:
 
 	//Other
 	void ClearScreen(float r, float g, float b, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
-	void refresh(ImageBuff& imageBuff);
+	void refresh(ImageBuff& imageBuff, uint16_t& fpsCntr);
 	class RefreshThreadProc
 	{
 		public:
-			void refresh(ID2D1HwndRenderTarget* rendertarget, ImageBuff& imageBuff);
+			void refresh(ID2D1HwndRenderTarget* rendertarget, ImageBuff& imageBuff, bool& isFinishedBool);
 	};
 	//==========================================================================================================================
 

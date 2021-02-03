@@ -2272,8 +2272,10 @@ void Graphics::DrawMeshTextured(mesh Mesh, BitMap& texture, ImageBuff& imageBuff
 	//==========================================================================================================================
 };
 
-void Graphics::RefreshThreadProc::refresh(ID2D1HwndRenderTarget* rendertarget, ImageBuff& imageBuff)
+void Graphics::RefreshThreadProc::refresh(ID2D1HwndRenderTarget* rendertarget, ImageBuff& imageBuff, bool& isFinishedBool)
 {
+	isFinishedBool = false;
+
 	ID2D1Bitmap* BufferBmp;
 
 
@@ -2307,27 +2309,36 @@ void Graphics::RefreshThreadProc::refresh(ID2D1HwndRenderTarget* rendertarget, I
 	BufferBmp->Release();
 
 	rendertarget->EndDraw();
+	isFinishedBool = true;
 }
 
-void Graphics::refresh(ImageBuff& imageBuff)
+void Graphics::refresh(ImageBuff& imageBuff, uint16_t& fpsCntr)
 {
 	RefreshThreadProc RefreshProc;
+	uint32_t counter = 0;
 	//if (refreshThread.joinable())
 	//{
 	//	refreshThread.join();
 	//}
 	//else
 	//{
-	//	refreshThread = std::thread(&Graphics::RefreshThreadProc::refresh, &RefreshProc, std::ref(rendertarget), std::ref(TempImageBuff));
+	//	for (counter = 0; counter < imageBuff.width * imageBuff.height; counter++)
+	//	{
+	//		imageBuff.SecPixelsPtr[counter] = imageBuff.PixelsPtr[counter];
+	//	}
+	//	refreshThread = std::thread(&Graphics::RefreshThreadProc::refresh, &RefreshProc, std::ref(rendertarget), std::ref(imageBuff));
 	//}
-	uint32_t counter = 0;
 
-	for (counter = 0; counter < imageBuff.width * imageBuff.height; counter++)
+	if (Graphics::threadComplete)
 	{
-		imageBuff.SecPixelsPtr[counter] = imageBuff.PixelsPtr[counter];
-	}
+		for (counter = 0; counter < imageBuff.width * imageBuff.height; counter++)
+		{
+			imageBuff.SecPixelsPtr[counter] = imageBuff.PixelsPtr[counter];
+		}
 
-	std::thread(&Graphics::RefreshThreadProc::refresh, &RefreshProc, std::ref(rendertarget), std::ref(imageBuff)).detach();
+		std::thread(&Graphics::RefreshThreadProc::refresh, &RefreshProc, std::ref(rendertarget), std::ref(imageBuff), std::ref(Graphics::threadComplete)).detach();
+		fpsCntr++;
+	}
 
 	//BeginDraw();
 	////Create Bitmap

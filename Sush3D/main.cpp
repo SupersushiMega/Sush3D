@@ -105,9 +105,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 
 	Graphics::vec3D ZeroPos = { 0.0f, 0.0f, 0.0f };
 
-	uint8_t frame = 0;
+	uint16_t frame = 0;
+	uint32_t cycle = 0;
 
 	uint16_t FPS = 0;
+	uint32_t mCPS = 0;
 
 	time_t StartTime = time(NULL);
 	time_t CurTime = time(NULL);
@@ -197,10 +199,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 			//graphics->DrawMeshFilled(Suzzane, color, imageBuffer, AlphaDepthBuffer);
 			graphics->DrawMeshTextured(Suzzane, SuzzaneBMP, imageBuffer, AlphaDepthBuffer);
 			graphics->DrawMeshTextured(terrain, terrainBMP, imageBuffer, AlphaDepthBuffer);
-			graphics->DrawBMP(BMPDrawTest, 600, 780, imageBuffer, AlphaDepthBuffer);
 			graphics->DrawSprite3D(RobotSprite, ZeroPos, imageBuffer, AlphaDepthBuffer, 20, 20);
+			graphics->DrawBMP(BMPDrawTest, 600, 780, imageBuffer, AlphaDepthBuffer);
 
-			sprintf_s(Buffer, "Sush3D \nVersion : Development_Multithreading\nX = %f \nY = %f \nZ = %f \n~FPS = %d", X, Y, Z, FPS);
+			sprintf_s(Buffer, "Sush3D \nVersion : Development_Multithreading\nX = %f \nY = %f \nZ = %f \n~main Cycle Per Second (mCPS) = %d\n~FPS = %d", X, Y, Z, mCPS, FPS);
 
 			graphics->DrawString(Buffer, 0, 0, color, imageBuffer);
 
@@ -212,16 +214,19 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 			//graphics->EndDraw();
 			//graphics->DrawLine(p1, p2, color, imageBuffer);
 
-			graphics->refresh(imageBuffer);
+			graphics->refresh(imageBuffer, frame);
 
-			if (difftime(CurTime, StartTime) > 1)
+			if (difftime(CurTime, StartTime) >= 1)
 			{
 				time(&StartTime);
 				FPS = frame;
+				mCPS = cycle;
 				frame = 0;
+				cycle = 0;
 			}
 			time(&CurTime);
-			frame++;
+			cycle++;
+			//frame++;
 		}
 	}
 
