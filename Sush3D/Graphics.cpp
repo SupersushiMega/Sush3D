@@ -2329,14 +2329,14 @@ void Graphics::refresh(ImageBuff& imageBuff, uint16_t& fpsCntr)
 	//	refreshThread = std::thread(&Graphics::RefreshThreadProc::refresh, &RefreshProc, std::ref(rendertarget), std::ref(imageBuff));
 	//}
 
-	if (Graphics::threadComplete)
+	if (Graphics::refreshthreadComplete)
 	{
 		for (counter = 0; counter < imageBuff.width * imageBuff.height; counter++)
 		{
 			imageBuff.SecPixelsPtr[counter] = imageBuff.PixelsPtr[counter];
 		}
 
-		std::thread(&Graphics::RefreshThreadProc::refresh, &RefreshProc, std::ref(rendertarget), std::ref(imageBuff), std::ref(Graphics::threadComplete)).detach();
+		std::thread(&Graphics::RefreshThreadProc::refresh, &RefreshProc, std::ref(rendertarget), std::ref(imageBuff), std::ref(Graphics::refreshthreadComplete)).detach();
 		fpsCntr++;
 	}
 

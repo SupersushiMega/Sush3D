@@ -26,10 +26,10 @@ class Graphics
 
 	SYSTEM_INFO systemInfo;
 
-	std::thread refreshThread;
-	bool threadComplete = true;
+	std::thread refreshThread;	//thread used for image refreshing
+	bool refreshthreadComplete = true;	//variable used to check if detached refresh thread is finished
 
-	float* Alpha_DepthBuffer;
+	float* Alpha_DepthBuffer;	//Buffer for alpha and depth values
 
 public:
 
@@ -222,26 +222,26 @@ public:
 public:
 
 	//2D:
-	void DrawPixel(uint16_t&x, uint16_t&y, Color &col, ImageBuff& imageBuff);
-	void DrawLine(Point& p1, Point& p2, Color& col, ImageBuff& imageBuff);
-	void DrawTriangle(triangle Triangle, Color color, ImageBuff& imageBuff);
-	void DrawTrianglefilled(triangle &Triangle, Color &color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
-	void DrawTriangletextured(triangle& Triangle, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
-	void DrawBMP(BitMap& bmp, uint16_t StartX, uint16_t StartY, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
+	void DrawPixel(uint16_t&x, uint16_t&y, Color &col, ImageBuff& imageBuff);	//draw pixels
+	void DrawLine(Point& p1, Point& p2, Color& col, ImageBuff& imageBuff);	//draw a line
+	void DrawTriangle(triangle Triangle, Color color, ImageBuff& imageBuff);	//Draw a unfilled triangle
+	void DrawTrianglefilled(triangle &Triangle, Color &color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);	//draw a triangle in solid color
+	void DrawTriangletextured(triangle& Triangle, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);	//draw a textured triangle
+	void DrawBMP(BitMap& bmp, uint16_t StartX, uint16_t StartY, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);	//draw a 24bit Bitmap
 
-	void DrawChar(char letter, uint16_t x, uint16_t y, uint8_t scaleX, uint8_t scaleY, Color& col, ImageBuff& imageBuff);
-	void DrawString(string String, uint16_t startX, uint16_t startY, Color& col, ImageBuff& imageBuff, uint8_t scaleX = 8, uint8_t scaleY = 15);
+	void DrawChar(char letter, uint16_t x, uint16_t y, uint8_t scaleX, uint8_t scaleY, Color& col, ImageBuff& imageBuff);	//draw a single letter
+	void DrawString(string String, uint16_t startX, uint16_t startY, Color& col, ImageBuff& imageBuff, uint8_t scaleX = 8, uint8_t scaleY = 15);	//draw string
 	
 	//3D:
 	void DrawSprite3D(BitMap& sprite, vec3D& WorldPos, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff, uint16_t sizeX, uint16_t sizeY);	//Draws a 2D sprite in 3D space, similar to Wolfenstein3D or the original Doom. if size values are 0 image resolution will be used
 
-	void DrawMesh(mesh Mesh, Color color, ImageBuff& imageBuff);
-	void DrawMeshFilled(mesh Mesh, Color color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
-	void DrawMeshTextured(mesh Mesh, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
+	void DrawMesh(mesh Mesh, Color color, ImageBuff& imageBuff);	//Draw a wireframe
+	void DrawMeshFilled(mesh Mesh, Color color, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);	//draw mesh in solid color
+	void DrawMeshTextured(mesh Mesh, BitMap& texture, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);	//draw mesh textured
 
 	//Other
-	void ClearScreen(float r, float g, float b, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);
-	void refresh(ImageBuff& imageBuff, uint16_t& fpsCntr);
+	void ClearScreen(float r, float g, float b, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff);	//clear window to specified color
+	void refresh(ImageBuff& imageBuff, uint16_t& fpsCntr);	//refresh window
 	class RefreshThreadProc
 	{
 		public:
@@ -251,7 +251,7 @@ public:
 
 	//Other functions
 	//==========================================================================================================================
-	bool Init(HWND windowHandle, uint16_t width, uint16_t height, float FOV, float DistancefromScreen, float ViewingDistance);
+	bool Init(HWND windowHandle, uint16_t width, uint16_t height, float FOV, float DistancefromScreen, float ViewingDistance);	//initialise the window
 	//==========================================================================================================================
 
 	//Letters
