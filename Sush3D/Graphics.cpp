@@ -714,11 +714,21 @@ uint16_t Graphics::CalcFunc::TrianglePlaneClip(vec3D PlanePoint, vec3D PlaneNorm
 	}
 }
 
-void Graphics::ClearScreen(uint8_t brightness, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff)
+void Graphics::ClearScreen(float r, float g, float b, ImageBuff& imageBuff, Alpha_DepthBuff& AlphaDepthBuff)
 {
-	memset(imageBuff.PixelsPtr, brightness, imageBuff.height * imageBuff.width * sizeof(uint32_t));
-	memset(AlphaDepthBuff.AlphaPtr, 1, imageBuff.height * imageBuff.width * sizeof(float));
-	memset(AlphaDepthBuff.DepthPtr, 0, imageBuff.height * imageBuff.width * sizeof(float));
+	for (uint16_t Y = 0; Y < Resolution.height; Y++)
+	{
+		for (uint16_t X = 0; X < Resolution.width; X++)
+		{
+			float Depth = 0.0f;
+			float Alpha = 1.0f;
+			Color col = { r, g, b, 1.0f };
+			imageBuff.PutPix(X, Y, col);
+			AlphaDepthBuff.putDepth(X, Y, Depth);
+			AlphaDepthBuff.putAlpha(X, Y, Alpha);
+		}
+	}
+	while (0);
 };
 
 void Graphics::DrawPixel(uint16_t &x, uint16_t&y, Color &col, ImageBuff& DepthBuffer)
@@ -1202,19 +1212,15 @@ void Graphics::DrawTriangletextured(triangle& Triangle, BitMap& texture, ImageBu
 			float tStep = 1.0f / ((float)(xEnd - xStart));
 			float t = 0.0f;
 
-			uint16_t y2 = 0;
-			uint16_t y3 = 0;
-			Color col = { 1.0f, 0.0f, 0.0f, };
-
 			for (uint16_t x = xStart; x <= xEnd; x++)
 			{
 				TextureU = (1.0f - t) * uStart + t * uEnd;
 				TextureV = (1.0f - t) * vStart + t * vEnd;
 				TextureW = (1.0f - t) * wStart + t * wEnd;
-				col = { 1.0f, 0.0f, 0.0f, };
+				Color col = { 1.0f, 0.0f, 0.0f, };
 
-				y2 = y + 1;
-				y3 = y - 1;
+				uint16_t y2 = y + 1;
+				uint16_t y3 = y - 1;
 
 				if ((TextureV < 1 && TextureV > 0) && (TextureU < 1 && TextureU > 0) && (x < imageBuff.width && x >= 0))
 				{
@@ -2323,15 +2329,12 @@ void Graphics::refresh(ImageBuff& imageBuff, uint16_t& fpsCntr)
 	//	refreshThread = std::thread(&Graphics::RefreshThreadProc::refresh, &RefreshProc, std::ref(rendertarget), std::ref(imageBuff));
 	//}
 
-
 	if (Graphics::refreshthreadComplete)
 	{
-		memcpy(imageBuff.SecPixelsPtr, imageBuff.PixelsPtr, imageBuff.height * imageBuff.width * (sizeof(uint8_t) * 4));
-		
-		//for (counter = 0; counter < imageBuff.width * imageBuff.height; counter++)
-		//{
-		//	imageBuff.SecPixelsPtr[counter] = imageBuff.PixelsPtr[counter];
-		//}
+		for (counter = 0; counter < imageBuff.width * imageBuff.height; counter++)
+		{
+			imageBuff.SecPixelsPtr[counter] = imageBuff.PixelsPtr[counter];
+		}
 
 		std::thread(&Graphics::RefreshThreadProc::refresh, &RefreshProc, std::ref(rendertarget), std::ref(imageBuff), std::ref(Graphics::refreshthreadComplete)).detach();
 		fpsCntr++;
