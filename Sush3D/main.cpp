@@ -203,7 +203,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 				graphics->DrawSprite3D(RobotSprite, ZeroPos, imageBuffer, AlphaDepthBuffer, 20, 20);
 				graphics->DrawBMP(BMPDrawTest, 600, 780, imageBuffer, AlphaDepthBuffer);
 
-				sprintf_s(Buffer, "Sush3D \nVersion : Development_Multithreading\nX = %f \nY = %f \nZ = %f \n~main Cycle Per Second (mCPS) = %d\n~FPS = %d", X, Y, Z, mCPS, FPS);
+				sprintf_s(Buffer, "Sush3D \nVersion : Development_OperatorOverloading\nX = %f \nY = %f \nZ = %f \n~main Cycle Per Second (mCPS) = %d\n~FPS = %d", X, Y, Z, mCPS, FPS);
 
 				graphics->DrawString(Buffer, 0, 0, color, imageBuffer);
 				//graphics->DrawMesh(Logo, color, imageBuffer);
