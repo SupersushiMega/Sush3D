@@ -132,89 +132,90 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmd, int
 		{
 			//update
 
-			if (GetAsyncKeyState(L'A'))	//a
-			{
-				graphics->camera.LocalPosDelta.x = -0.1f;
-			}
-			else if (GetAsyncKeyState(L'D'))	//d
-			{
-				graphics->camera.LocalPosDelta.x = 0.1f;
-			}
-			else
-			{
-				graphics->camera.LocalPosDelta.x = 0.0f;
-			}
-
-			if (GetAsyncKeyState(L'W'))	//w
-			{
-				graphics->camera.LocalPosDelta.z = 0.1f;
-			}
-			else if (GetAsyncKeyState(L'S'))	//s
-			{
-				graphics->camera.LocalPosDelta.z = -0.1f;
-			}
-			else
-			{
-				graphics->camera.LocalPosDelta.z = 0.0f;
-			}
-
-			if (GetAsyncKeyState(VK_UP))	//Left rotation
-			{
-				graphics->camera.LocalPosDelta.y = 0.1f;
-			}
-			else if (GetAsyncKeyState(VK_DOWN))	//Right rotation
-			{
-				graphics->camera.LocalPosDelta.y = -0.1f;
-			}
-			else
-			{
-				graphics->camera.LocalPosDelta.y = 0.0f;
-			}
-
-			if (GetAsyncKeyState(VK_LEFT))	//Left rotation
-			{
-				graphics->camera.TargetRot.y += -0.1f;
-			}
-			else if (GetAsyncKeyState(VK_RIGHT))	//Right rotation
-			{
-				graphics->camera.TargetRot.y += 0.1f;
-			}
 
 			//render
 			Graphics::Color color = { 0.5f, 0.5f, 0.5f, 1.0f };
 
 
-			graphics->ClearScreen(1, 1, 1, imageBuffer, AlphaDepthBuffer);
 
-			Logo.rotation.y += 0.01f;
 			
 			X = graphics->camera.GlobalPos.x;
 			Y = graphics->camera.GlobalPos.y;
 			Z = graphics->camera.GlobalPos.z;
 
 			
+			if (graphics->refreshthreadComplete)
+			{
+				Logo.rotation.y += 0.01f;
+				if (GetAsyncKeyState(L'A'))	//a
+				{
+					graphics->camera.LocalPosDelta.x = -0.1f;
+				}
+				else if (GetAsyncKeyState(L'D'))	//d
+				{
+					graphics->camera.LocalPosDelta.x = 0.1f;
+				}
+				else
+				{
+					graphics->camera.LocalPosDelta.x = 0.0f;
+				}
 
-			graphics->DrawMeshTextured(Logo, LogoBMP, imageBuffer, AlphaDepthBuffer);
-			//graphics->DrawMesh(Logo, color, imageBuffer);
-			//graphics->DrawMeshFilled(Suzzane, color, imageBuffer, AlphaDepthBuffer);
-			graphics->DrawMeshTextured(Suzzane, SuzzaneBMP, imageBuffer, AlphaDepthBuffer);
-			graphics->DrawMeshTextured(terrain, terrainBMP, imageBuffer, AlphaDepthBuffer);
-			graphics->DrawSprite3D(RobotSprite, ZeroPos, imageBuffer, AlphaDepthBuffer, 20, 20);
-			graphics->DrawBMP(BMPDrawTest, 600, 780, imageBuffer, AlphaDepthBuffer);
+				if (GetAsyncKeyState(L'W'))	//w
+				{
+					graphics->camera.LocalPosDelta.z = 0.1f;
+				}
+				else if (GetAsyncKeyState(L'S'))	//s
+				{
+					graphics->camera.LocalPosDelta.z = -0.1f;
+				}
+				else
+				{
+					graphics->camera.LocalPosDelta.z = 0.0f;
+				}
 
-			sprintf_s(Buffer, "Sush3D \nVersion : Development_Multithreading\nX = %f \nY = %f \nZ = %f \n~main Cycle Per Second (mCPS) = %d\n~FPS = %d", X, Y, Z, mCPS, FPS);
+				if (GetAsyncKeyState(VK_UP))	//Left rotation
+				{
+					graphics->camera.LocalPosDelta.y = 0.1f;
+				}
+				else if (GetAsyncKeyState(VK_DOWN))	//Right rotation
+				{
+					graphics->camera.LocalPosDelta.y = -0.1f;
+				}
+				else
+				{
+					graphics->camera.LocalPosDelta.y = 0.0f;
+				}
 
-			graphics->DrawString(Buffer, 0, 0, color, imageBuffer);
+				if (GetAsyncKeyState(VK_LEFT))	//Left rotation
+				{
+					graphics->camera.TargetRot.y += -0.1f;
+				}
+				else if (GetAsyncKeyState(VK_RIGHT))	//Right rotation
+				{
+					graphics->camera.TargetRot.y += 0.1f;
+				}
+				graphics->ClearScreen(255, imageBuffer, AlphaDepthBuffer);
+				graphics->DrawMeshTextured(Logo, LogoBMP, imageBuffer, AlphaDepthBuffer);
+				//graphics->DrawMesh(Logo, color, imageBuffer);
+				//graphics->DrawMeshFilled(Suzzane, color, imageBuffer, AlphaDepthBuffer);
+				graphics->DrawMeshTextured(Suzzane, SuzzaneBMP, imageBuffer, AlphaDepthBuffer);
+				graphics->DrawMeshTextured(terrain, terrainBMP, imageBuffer, AlphaDepthBuffer);
+				graphics->DrawSprite3D(RobotSprite, ZeroPos, imageBuffer, AlphaDepthBuffer, 20, 20);
+				graphics->DrawBMP(BMPDrawTest, 600, 780, imageBuffer, AlphaDepthBuffer);
 
-			//graphics->DrawMesh(Logo, color, imageBuffer);
-			//graphics->DrawMesh(Suzzane, color, imageBuffer);
-			//graphics->DrawMesh(terrain, color, imageBuffer);
+				sprintf_s(Buffer, "Sush3D \nVersion : Development_Multithreading\nX = %f \nY = %f \nZ = %f \n~main Cycle Per Second (mCPS) = %d\n~FPS = %d", X, Y, Z, mCPS, FPS);
 
-			//graphics->DrawMeshTextured(TestMesh, bitmap, imageBuffer, AlphaDepthBuffer);
-			//graphics->EndDraw();
-			//graphics->DrawLine(p1, p2, color, imageBuffer);
+				graphics->DrawString(Buffer, 0, 0, color, imageBuffer);
+				//graphics->DrawMesh(Logo, color, imageBuffer);
+				//graphics->DrawMesh(Suzzane, color, imageBuffer);
+				//graphics->DrawMesh(terrain, color, imageBuffer);
 
-			graphics->refresh(imageBuffer, frame);
+				//graphics->DrawMeshTextured(TestMesh, bitmap, imageBuffer, AlphaDepthBuffer);
+				//graphics->EndDraw();
+				//graphics->DrawLine(p1, p2, color, imageBuffer);
+
+				graphics->refresh(imageBuffer, frame);
+			}
 
 			if (difftime(CurTime, StartTime) >= 1)
 			{
