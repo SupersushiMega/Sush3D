@@ -27,7 +27,8 @@ class Graphics
 	SYSTEM_INFO systemInfo;
 
 	std::thread refreshThread;	//thread used for image refreshing
-	bool refreshthreadComplete = true;	//variable used to check if detached refresh thread is finished
+	public:
+		bool refreshthreadComplete = true;	//variable used to check if detached refresh thread is finished
 
 	float* Alpha_DepthBuffer;	//Buffer for alpha and depth values
 
